@@ -1,7 +1,7 @@
 package com.v2ray.ang.ui.splash
 
 import android.content.Intent
-import com.v2ray.ang.ui.compose.RippleLoader
+import com.v2ray.ang.ui.compose.BouncingDots
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.size
@@ -33,6 +33,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import android.content.res.Configuration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -51,8 +53,9 @@ import com.v2ray.ang.ui.compose.GlassCardShape
 import com.v2ray.ang.ui.compose.XfGreen
 import com.v2ray.ang.ui.compose.liquidGlass
 import com.v2ray.ang.ui.main.MainActivity
+import java.util.Locale
 
-/** Launcher entry: the opening words fade in over a ripple loader, in under a second, then hands over to [MainActivity]. */
+/** Launcher entry: the opening words (always in Persian) fade in over the bouncing dots, in under a second, then hands over to [MainActivity]. */
 class SplashActivity : BaseComponentActivity() {
 
     @Composable
@@ -86,6 +89,15 @@ internal fun splashStatusIndex(percent: Int): Int =
 @Composable
 private fun SplashScreen(onFinished: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
+    // The opening words are Persian from the very first frame, whatever the language of the phone is: the title is read
+    // from a Persian copy of the resources, so it does not wait for (or depend on) the app language being applied.
+    val base = LocalContext.current
+    val persianContext = remember(base) {
+        val config = Configuration(base.resources.configuration)
+        config.setLocale(Locale.forLanguageTag("fa"))
+        base.createConfigurationContext(config)
+    }
+    val title = remember(persianContext) { persianContext.getString(R.string.xf_splash_title) }
     // The words fade in from the first frame, the infinity loop runs under them, and the app opens after about
     // 0.9 s: one fade, a short hold, nothing else to wait for.
     val fade = remember { Animatable(0f) }
@@ -110,15 +122,15 @@ private fun SplashScreen(onFinished: () -> Unit) {
             verticalArrangement = Arrangement.Center,
         ) {
             Text(
-                text = stringResource(R.string.xf_splash_title),
+                text = title,
                 color = scheme.onBackground,
                 style = MaterialTheme.typography.displayMedium.copy(fontSize = 38.sp, fontWeight = FontWeight.Bold),
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(40.dp))
-            RippleLoader(
-                modifier = Modifier.size(88.dp),
+            BouncingDots(
                 color = scheme.primary,
+                dotSize = 14.dp,
             )
         }
         Text(

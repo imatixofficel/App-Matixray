@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -39,6 +40,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
@@ -69,6 +72,7 @@ import com.v2ray.ang.extension.toSpeedString
 import com.v2ray.ang.ui.compose.GlassCardShape
 import com.v2ray.ang.ui.compose.LocalDarkTheme
 import com.v2ray.ang.ui.compose.XfGreen
+import com.v2ray.ang.ui.compose.XfPurple
 import com.v2ray.ang.ui.compose.XfPurpleLight
 import com.v2ray.ang.ui.compose.XfYellow
 import com.v2ray.ang.ui.compose.liquidGlass
@@ -116,6 +120,8 @@ fun MainConnectHero(
     val stopLabel = stringResource(R.string.acc_stop)
     val source = remember { MutableInteractionSource() }
     val dark = LocalDarkTheme.current
+    // The shadow takes the color of the section: the brand lilac in the main section (in the light theme too), orange in Psiphon.
+    val shadowTint = if (accent == scheme.primary) XfPurple else accent
 
     // Press feel: the button dips quickly while the finger is down and springs back with a small bounce; when the
     // state flips it pops once, and every tap sends one ring outward.
@@ -141,26 +147,14 @@ fun MainConnectHero(
         }
     }
 
-    // The page is one box: the timer and status at the top, the button in the exact middle of the page, the live
-    // numbers (and whatever the caller adds) at the bottom, and a faint internet globe behind it all.
-    BoxWithConstraints(modifier = modifier.fillMaxSize().clipToBounds()) {
-        val buttonSize = (maxHeight * 0.34f).coerceIn(170.dp, 250.dp)
-
-        // A picture drawn once and tinted, so it costs one bitmap draw per frame and never animates.
-        Image(
-            painter = painterResource(R.drawable.bg_globe),
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            alpha = 0.14f,
-            colorFilter = ColorFilter.tint(accent),
-            modifier = Modifier
-                .align(Alignment.Center)
-                .size(maxWidth * 1.15f),
-        )
-
+    // The page is one column: the timer and status at the top, the live numbers (and whatever the caller adds) at the
+    // bottom, and between them the free space, where the button sits a little above its middle, so it can never
+    // fall into the number cards, however short the screen or tall the bottom part is. The faint internet globe is
+    // centered on the button, behind it.
+    Column(modifier = modifier.fillMaxSize().clipToBounds()) {
         Column(
             modifier = Modifier
-                .align(Alignment.TopCenter)
+                .zIndex(1f)
                 .fillMaxWidth()
                 .padding(top = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -213,76 +207,96 @@ fun MainConnectHero(
             }
         }
 
-        // The button is the two pictures of the design, off and on; a tap is taken on press so it answers at once.
-        Image(
-            painter = painterResource(if (shownRunning) R.drawable.ic_btn_on else R.drawable.ic_btn_off),
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier
-                .align(Alignment.Center)
-                .size(buttonSize)
-                .graphicsLayer {
-                    val sc = pressFactor * pop.value
-                    scaleX = sc
-                    scaleY = sc
-                }
-                .drawBehind {
-                    // One ring that spreads out of the button and fades on every tap.
-                    if (ring.value > 0f && ring.value < 1f) {
-                        val r0 = size.minDimension / 2f
-                        drawCircle(
-                            color = accent.copy(alpha = 0.45f * (1f - ring.value)),
-                            radius = r0 * (1f + 0.30f * ring.value),
-                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3.dp.toPx() * (1f - ring.value) + 1.dp.toPx()),
-                        )
-                    }
-                }
-                .drawBehind {
-                    // A soft shadow under the button so it stands out from the page: wide and faint, a little lower
-                    // than the button, drawn before the clip so nothing cuts it.
-                    val r = size.minDimension / 2f
-                    val c = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f + 10.dp.toPx())
-                    val reach = r * 1.3f
-                    drawCircle(
-                        brush = androidx.compose.ui.graphics.Brush.radialGradient(
-                            colorStops = arrayOf(
-                                0.0f to Color.Black.copy(alpha = if (dark) 0.50f else 0.22f),
-                                0.72f to Color.Black.copy(alpha = if (dark) 0.28f else 0.12f),
-                                1.0f to Color.Transparent,
-                            ),
-                            center = c,
-                            radius = reach,
-                        ),
-                        radius = reach,
-                        center = c,
-                    )
-                }
-                .clip(CircleShape)
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onPress = { offset ->
-                            val press = PressInteraction.Press(offset)
-                            source.tryEmit(press)
-                            val released = tryAwaitRelease()
-                            source.tryEmit(if (released) PressInteraction.Release(press) else PressInteraction.Cancel(press))
+        BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            // Smaller than the first version (it was up to 250 dp, then 190 dp): at most 165 dp, never more than 46 % of the width, and never taller than the free space.
+            val buttonSize = minOf(maxWidth * 0.46f, maxHeight * 0.78f, 165.dp)
+
+            // The button and the globe behind it are one block, a little above the middle of the free space, so the globe is always centered on the button.
+            Box(modifier = Modifier.align(BiasAlignment(0f, -0.15f)).size(buttonSize)) {
+                // A picture drawn once and tinted, so it costs one bitmap draw per frame and never animates.
+                Image(
+                    painter = painterResource(R.drawable.bg_globe),
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    alpha = 0.14f,
+                    colorFilter = ColorFilter.tint(accent),
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .requiredSize(maxWidth * 1.15f),
+                )
+
+                // The button is the two pictures of the design, off and on; a tap is taken on press so it answers at once.
+                Image(
+                    painter = painterResource(if (shownRunning) R.drawable.ic_btn_on else R.drawable.ic_btn_off),
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(buttonSize)
+                        .graphicsLayer {
+                            val sc = pressFactor * pop.value
+                            scaleX = sc
+                            scaleY = sc
+                        }
+                        .drawBehind {
+                            // One ring that spreads out of the button and fades on every tap.
+                            if (ring.value > 0f && ring.value < 1f) {
+                                val r0 = size.minDimension / 2f
+                                drawCircle(
+                                    color = accent.copy(alpha = 0.45f * (1f - ring.value)),
+                                    radius = r0 * (1f + 0.30f * ring.value),
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3.dp.toPx() * (1f - ring.value) + 1.dp.toPx()),
+                                )
+                            }
+                        }
+                        .drawBehind {
+                            // A soft lilac glow-shadow under the button, lighter and tighter than the old black one: a
+                            // little lower than the button, drawn before the clip so nothing cuts it.
+                            val r = size.minDimension / 2f
+                            val c = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f + 6.dp.toPx())
+                            val reach = r * 1.25f
+                            drawCircle(
+                                brush = androidx.compose.ui.graphics.Brush.radialGradient(
+                                    colorStops = arrayOf(
+                                        0.0f to shadowTint.copy(alpha = if (dark) 0.30f else 0.28f),
+                                        0.74f to shadowTint.copy(alpha = if (dark) 0.16f else 0.14f),
+                                        1.0f to Color.Transparent,
+                                    ),
+                                    center = c,
+                                    radius = reach,
+                                ),
+                                radius = reach,
+                                center = c,
+                            )
+                        }
+                        .clip(CircleShape)
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onPress = { offset ->
+                                    val press = PressInteraction.Press(offset)
+                                    source.tryEmit(press)
+                                    val released = tryAwaitRelease()
+                                    source.tryEmit(if (released) PressInteraction.Release(press) else PressInteraction.Cancel(press))
+                                },
+                                onTap = {
+                                    taps++
+                                    pending = true
+                                    onToggle()
+                                },
+                            )
+                        }
+                        .semantics(mergeDescendants = true) {
+                            contentDescription = if (shownRunning) stopLabel else startLabel
+                            role = Role.Button
+                            onClick { pending = true; onToggle(); true }
                         },
-                        onTap = {
-                            taps++
-                            pending = true
-                            onToggle()
-                        },
-                    )
-                }
-                .semantics(mergeDescendants = true) {
-                    contentDescription = if (shownRunning) stopLabel else startLabel
-                    role = Role.Button
-                    onClick { pending = true; onToggle(); true }
-                },
-        )
+                )
+            }
+        }
 
         Column(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
+                .zIndex(1f)
                 .fillMaxWidth()
                 .padding(bottom = 8.dp),
         ) {
