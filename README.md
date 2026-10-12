@@ -1,8 +1,13 @@
 <div dir="ltr" align="center">
 
-[**![Lang_farsi](https://user-images.githubusercontent.com/125398461/234186932-52f1fa82-52c6-417f-8b37-08fe9250a55f.png) فارسی**](README_fa.md) / [**English 🇬🇧**](README.md)
+[**🇮🇷 فارسی**](README_fa.md) / [**English**](README.md) 🇬🇧
 
 </div>
+
+<br>
+
+<h1 align="center">In the name of Allah, the Most Gracious, the Most Merciful</h1>
+
 <br>
 
 <div align="center">
@@ -159,8 +164,6 @@ Matixray is <strong>free</strong>, <strong>ad-free</strong>, and <strong>open-so
 
 </div>
 
-> For direct support, please contact us on Telegram.
-
 ---
 
 ## 👩‍🏫 Collaboration & Contact
@@ -171,7 +174,6 @@ Matixray is <strong>free</strong>, <strong>ad-free</strong>, and <strong>open-so
 
 <br>
 
-[![Email](https://img.shields.io/badge/Email-Contact-005FF9?style=flat-square&logo=mail.ru)](mailto:imatixofficel@example.com)
 [![Telegram](https://img.shields.io/badge/Telegram-@imatix7-26A5E4?style=flat-square&logo=telegram&logoColor=white)](https://t.me/imatix7)
 [![GitHub Issues](https://img.shields.io/badge/GitHub-Issues-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/imatixofficel/App-Matixray/issues)
 
