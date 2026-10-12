@@ -105,7 +105,6 @@ fun MainConnectHero(
 ) {
     val scheme = MaterialTheme.colorScheme
 
-    // The button answers the tap in the same frame; the service state arrives a moment later and takes over.
     var pending by remember { mutableStateOf(false) }
     LaunchedEffect(isRunning) { pending = false }
     LaunchedEffect(pending) {
@@ -120,11 +119,8 @@ fun MainConnectHero(
     val stopLabel = stringResource(R.string.acc_stop)
     val source = remember { MutableInteractionSource() }
     val dark = LocalDarkTheme.current
-    // The shadow takes the color of the section: the brand lilac in the main section (in the light theme too), orange in Psiphon.
     val shadowTint = if (accent == scheme.primary) XfPurple else accent
 
-    // Press feel: the button dips quickly while the finger is down and springs back with a small bounce; when the
-    // state flips it pops once, and every tap sends one ring outward.
     val pressed by source.collectIsPressedAsState()
     val pressFactor by animateFloatAsState(
         targetValue = if (pressed) 0.91f else 1f,
@@ -147,10 +143,6 @@ fun MainConnectHero(
         }
     }
 
-    // The page is one column: the timer and status at the top, the live numbers (and whatever the caller adds) at the
-    // bottom, and between them the free space, where the button sits a little above its middle, so it can never
-    // fall into the number cards, however short the screen or tall the bottom part is. The faint internet globe is
-    // centered on the button, behind it.
     Column(modifier = modifier.fillMaxSize().clipToBounds()) {
         Column(
             modifier = Modifier
@@ -171,7 +163,6 @@ fun MainConnectHero(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
             ) {
-                // Status dot: green while connected, yellow while not.
                 Box(
                     modifier = Modifier
                         .size(8.dp)
@@ -188,14 +179,12 @@ fun MainConnectHero(
                     modifier = Modifier
                         .padding(horizontal = 24.dp)
                         .then(
-                            // A tap on the status line of a running tunnel tests the connection again.
                             if (onStatusClick != null && isRunning) Modifier.clickable(role = Role.Button, onClick = onStatusClick)
                             else Modifier
                         ),
                 )
             }
             if (isRunning) {
-                // The real speed of the app's traffic, read from the system counters once a second.
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = "↓ ${speed.downBytesPerSec.toSpeedString()}    ↑ ${speed.upBytesPerSec.toSpeedString()}",
@@ -208,12 +197,9 @@ fun MainConnectHero(
         }
 
         BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            // Smaller than the first version (it was up to 250 dp, then 190 dp): at most 165 dp, never more than 46 % of the width, and never taller than the free space.
             val buttonSize = minOf(maxWidth * 0.46f, maxHeight * 0.78f, 165.dp)
 
-            // The button and the globe behind it are one block, a little above the middle of the free space, so the globe is always centered on the button.
             Box(modifier = Modifier.align(BiasAlignment(0f, -0.15f)).size(buttonSize)) {
-                // A picture drawn once and tinted, so it costs one bitmap draw per frame and never animates.
                 Image(
                     painter = painterResource(R.drawable.bg_globe),
                     contentDescription = null,
@@ -222,9 +208,9 @@ fun MainConnectHero(
                     colorFilter = ColorFilter.tint(accent),
                     modifier = Modifier
                         .align(Alignment.Center)
-                                       .requiredSize(this@BoxWithConstraints.maxWidth * 1.15f),
+                        .requiredSize(maxWidth = this@BoxWithConstraints.maxWidth * 1.15f),
+                )
 
-                // The button is the two pictures of the design, off and on; a tap is taken on press so it answers at once.
                 Image(
                     painter = painterResource(if (shownRunning) R.drawable.ic_btn_on else R.drawable.ic_btn_off),
                     contentDescription = null,
@@ -238,7 +224,6 @@ fun MainConnectHero(
                             scaleY = sc
                         }
                         .drawBehind {
-                            // One ring that spreads out of the button and fades on every tap.
                             if (ring.value > 0f && ring.value < 1f) {
                                 val r0 = size.minDimension / 2f
                                 drawCircle(
@@ -249,8 +234,6 @@ fun MainConnectHero(
                             }
                         }
                         .drawBehind {
-                            // A soft lilac glow-shadow under the button, lighter and tighter than the old black one: a
-                            // little lower than the button, drawn before the clip so nothing cuts it.
                             val r = size.minDimension / 2f
                             val c = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f + 6.dp.toPx())
                             val reach = r * 1.25f
@@ -331,7 +314,6 @@ fun MainConnectHero(
     }
 }
 
-/** One live number under the connect button, as in the kit: the name with a small colored mark on the right, the value below; one focusable node. */
 @Composable
 private fun RowScope.StatCard(iconRes: Int, label: String, value: String, tint: Color) {
     Column(
@@ -375,7 +357,6 @@ private fun RowScope.StatCard(iconRes: Int, label: String, value: String, tint: 
     }
 }
 
-/** "hh:mm:ss" with the seconds dimmed, like the timer of the design; dimmed as a whole while idle. */
 private fun formatElapsed(totalSeconds: Long, color: Color, running: Boolean): AnnotatedString {
     val h = totalSeconds / 3600
     val m = totalSeconds % 3600 / 60
