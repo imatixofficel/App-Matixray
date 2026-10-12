@@ -5,9 +5,6 @@
 </div>
 <br>
 
-<p align="center"><img src="https://cdn.imgurl.ir/uploads/i8987_file_00000000a7d481f48606bb21e6d341aa.png" width="40%" /></p>
-<br>
-
 <div align="center">
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/imatixofficel/App-Matixray)
