@@ -222,7 +222,7 @@ fun MainConnectHero(
                     colorFilter = ColorFilter.tint(accent),
                     modifier = Modifier
                         .align(Alignment.Center)
-            .requiredSize(this@BoxWithConstraints.maxWidth * 1.15f),
+                                   .requiredSize(this@BoxWithConstraints.maxWidth * 1.15f),
                 )
 
                 // The button is the two pictures of the design, off and on; a tap is taken on press so it answers at once.
