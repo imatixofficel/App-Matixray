@@ -1,84 +1,46 @@
-<div align="center">
+<div dir="ltr" align="center">
 
-# **MATIXRAY**
+[**![Lang_farsi](https://user-images.githubusercontent.com/125398461/234186932-52f1fa82-52c6-417f-8b37-08fe9250a55f.png) فارسی**](README_fa.md) / [**English 🇬🇧**](README.md)
 
-**In the name of Allah, the Most Gracious, the Most Merciful**
-
----
-
-**Matixray** is an upgraded V2Ray client for Android, based on v2rayNG, supporting both **Xray** and **v2fly** cores. It is an enhanced version developed by the **Matix** team.
-
+</div>
 <br>
 
-<a href="https://github.com/imatixofficel/App-Matixray">
-  <img src="https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub">
-</a>
-&nbsp;
-<a href="https://t.me/imatix7">
-  <img src="https://img.shields.io/badge/Telegram-@imatix7-26A5E4?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram">
-</a>
+<p align="center"><img src="https://cdn.imgurl.ir/uploads/i8987_file_00000000a7d481f48606bb21e6d341aa.png" width="40%" /></p>
+<br>
 
-<br><br>
+<div align="center">
 
-<a href="./README.fa.md">
-  <img src="https://img.shields.io/badge/Persian_Version-View-239f40?style=for-the-badge" alt="Persian Version">
-</a>
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/imatixofficel/App-Matixray)
+[![Last Version](https://img.shields.io/github/v/release/imatixofficel/App-Matixray?style=flat-square&label=Last%20Version)](https://github.com/imatixofficel/App-Matixray/releases)
+[![Downloads](https://img.shields.io/github/downloads/imatixofficel/App-Matixray/total?style=flat-square&logo=github&label=Downloads)](https://github.com/imatixofficel/App-Matixray/releases)
+[![Last Release Date](https://img.shields.io/github/release-date/imatixofficel/App-Matixray?style=flat-square&label=Last%20Release)](https://github.com/imatixofficel/App-Matixray/releases)
+[![Telegram](https://img.shields.io/badge/Telegram-@imatix7-26A5E4?style=flat-square&logo=telegram&logoColor=white)](https://t.me/imatix7)
 
 </div>
 
 ---
 
-> [!IMPORTANT]
-> **Matixray** is an upgraded client built on top of **v2rayNG** and further enhanced by the **Matix** team. It supports both **Xray** and **v2fly** cores for maximum compatibility.
+## 📖 What is Matixray?
+
+<p dir="ltr" style="font-size: 16px">
+<strong>Matixray</strong> is an upgraded V2Ray client for Android, based on <a href="https://github.com/2dust/v2rayNG">v2rayNG</a>, supporting both <strong>Xray</strong> and <strong>v2fly</strong> cores. It is developed and enhanced by the <strong>Matix</strong> team.
+</p>
+
+<p dir="ltr" style="font-size: 16px">
+Matixray is <strong>free</strong>, <strong>ad-free</strong>, and <strong>open-source</strong>. It requires <strong>no root access</strong> and works using Android's built-in <strong>VpnService</strong> API.
+</p>
 
 ---
 
-> [!TIP]
-> For best performance, always use the **latest version** and keep your subscription links updated.
-
----
-
-> [!NOTE]
-> **Matixray** works without root access by using Android's built-in **VpnService** API.
-
----
-
-> [!WARNING]
-> Make sure to uninstall any previous version of Matixray or v2rayNG before installing a new build to avoid conflicts.
-
----
-
-> [!CAUTION]
-> Never share your personal subscription links or configs publicly. They contain your private server credentials.
-
----
-
-## 📖 About
-
-**Matixray** is a free and open-source **V2Ray** client for Android, developed by the **Matix** team. It is built on top of the popular **v2rayNG** project and supports both **Xray** and **v2fly** cores. Matixray is **free**, **ad-free**, and **requires no root access**.
-
----
-
-## 📑 Table of Contents
-
-1. [✨ Features](#-features)
-2. [🧠 How It Works](#-how-it-works)
-3. [📱 Installation](#-installation)
-4. [🚀 Getting Started](#-getting-started)
-5. [⚙️ Recommended Settings](#️-recommended-settings)
-6. [🛠 Common Troubleshooting](#-common-troubleshooting)
-7. [📞 Support](#-support)
-8. [📄 License](#-license)
-
----
-
-## ✨ Features
+## 🚀 Main Features
 
 > - **Support for Xray and v2fly cores**
 > - **Support for various V2Ray protocols**
 > - **Based on v2rayNG** (stable and familiar for existing users)
 > - **Enhanced and upgraded by the Matix team**
 > - **Reliable connection management and routing**
+> - **Free, ad-free, and open-source**
+> - **No root access required**
 
 ---
 
@@ -111,7 +73,32 @@
 
 ---
 
-## 📱 Installation
+## 📥 Direct Download
+
+<div align="left">
+<table>
+    <thead align="left">
+        <tr>
+            <th>OS</th>
+            <th>Download</th>
+        </tr>
+    </thead>
+    <tbody align="left">
+        <tr>
+            <td>Android</td>
+            <td>
+                <a href="https://github.com/imatixofficel/App-Matixray/releases/latest"><img src="https://img.shields.io/badge/APK-Universal-044d29.svg?logo=android"></a>
+            </td>
+        </tr>
+    </tbody>
+</table>
+</div>
+
+> **Note:** More download options (arm64, arm7, x86_64) will be available soon.
+
+---
+
+## ⚙️ Installation & Setup
 
 > **1.** Go to the [Releases](https://github.com/imatixofficel/App-Matixray/releases) page on GitHub.
 >
@@ -120,21 +107,10 @@
 > **3.** In Android settings, enable **"Install from unknown sources"** for your browser or file manager.
 >
 > **4.** Install the APK.
-
----
-
-## 🚀 Getting Started
-
-> **1. Add a server:**
-> - Tap the **"+"** button from the main menu.
-> - You can enter a subscription link or config, or use a **QR code**.
 >
-> **2. Connect:**
-> - Select your desired server.
-> - Tap the **connect button (V)** at the bottom of the screen.
->
-> **3. Test speed and ping:**
-> - Long-press any server and choose **"Test ping"** or **"Real speed test."**
+> **5.** Open the app, add a server (via subscription link, config, or QR code), and connect.
+
+> **Note:** Before installing, make sure to uninstall any previous version of Matixray or v2rayNG to avoid conflicts.
 
 ---
 
@@ -157,21 +133,50 @@
 
 ---
 
-## 📞 Support
+## 🌎 Translations
 
-> **Telegram:** [@imatix7](https://t.me/imatix7)
->
-> **GitHub Issues:** [Report a problem](https://github.com/imatixofficel/App-Matixray/issues)
+> You can improve existing languages or contribute new ones by editing the JSON files in the project.  
+> More languages will be added in future updates.
+
+---
+
+## ✏️ Acknowledgements
+
+> We would like to express our sincere appreciation to the contributors of the following projects, whose robust foundation and innovative features have significantly enhanced the success and functionality of this project.
+
+> - [v2rayNG](https://github.com/2dust/v2rayNG) — The base project for Matixray
+> - [Xray-core](https://github.com/XTLS/Xray-core) — Core support
+> - [v2fly](https://github.com/v2fly/v2ray-core) — Core support
+> - [Vazirmatn Font by Saber Rastikerdar](https://github.com/rastikerdar/vazirmatn)
+> - [Others](https://github.com/imatixofficel/App-Matixray)
+
+---
+
+## 🎯 Support & Donation
+
+> The easiest way to support us is to click on the star (⭐) at the top of this page.
 
 <div align="center">
 
-<a href="https://t.me/imatix7">
-  <img src="https://img.shields.io/badge/Telegram-@imatix7-26A5E4?style=flat-square&logo=telegram&logoColor=white" alt="Telegram">
-</a>
-&nbsp;
-<a href="https://github.com/imatixofficel/App-Matixray/issues">
-  <img src="https://img.shields.io/badge/GitHub-Issues-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub Issues">
-</a>
+[![Star History](https://img.shields.io/badge/⭐-Star%20this%20repo-yellow?style=for-the-badge)](https://github.com/imatixofficel/App-Matixray)
+
+</div>
+
+> For direct support, please contact us on Telegram.
+
+---
+
+## 👩‍🏫 Collaboration & Contact
+
+> Matixray is a community-driven project. If you're interested in contributing, please open an issue or contact us.
+
+<div align="center">
+
+<br>
+
+[![Email](https://img.shields.io/badge/Email-Contact-005FF9?style=flat-square&logo=mail.ru)](mailto:imatixofficel@example.com)
+[![Telegram](https://img.shields.io/badge/Telegram-@imatix7-26A5E4?style=flat-square&logo=telegram&logoColor=white)](https://t.me/imatix7)
+[![GitHub Issues](https://img.shields.io/badge/GitHub-Issues-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/imatixofficel/App-Matixray/issues)
 
 </div>
 
@@ -185,11 +190,11 @@
 
 <div align="center">
 
-**Made with ❤️ for users around the world**
+**Made with ❤️ by the Matix team**
 
 <br><br>
 
-<a href="./README.fa.md">
+<a href="./README_fa.md">
   <img src="https://img.shields.io/badge/Persian_Version-View-239f40?style=for-the-badge" alt="Persian Version">
 </a>
 
