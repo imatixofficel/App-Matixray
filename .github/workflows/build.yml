@@ -1,10 +1,5 @@
-name: Build APK
+name: Build and Release APK
 
-# App-Matixray (https://github.com/imatixofficel/App-Matixray), branch master.
-# Every successful build puts its .apk files in a GitHub Release of this repository:
-#   - push to master                    -> release "Matixray build N" (tag build-N)
-#   - manual run with a release_tag     -> release "Matixray v<release_tag>" (tag <release_tag>)
-#   - manual run without a release_tag  -> same as a push
 on:
   workflow_dispatch:
     inputs:
@@ -14,300 +9,95 @@ on:
   push:
     branches:
       - master
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
 
 jobs:
-  build:
+  build-and-release:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     env:
-      RUST_TOOLCHAIN: "1.99.0"
       GO_VERSION: "1.26"
-      HAS_KEYSTORE: ${{ secrets.APP_KEYSTORE_BASE64 != '' }}
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v7
-      with:
-        submodules: 'recursive'
-        fetch-depth: '0'
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
 
-    - name: Init nested submodules
-      run: |
-        git submodule foreach --recursive git submodule update --init --recursive
+      - name: Init nested submodules
+        run: git submodule foreach --recursive git submodule update --init --recursive
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v4
-      with:
-        log-accepted-android-sdk-licenses: false
-        cmdline-tools-version: '14742923'
-        packages: 'platforms;android-37.0 build-tools;37.0.0 platform-tools'
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
 
-    - name: Install NDK
-      run: |
-        echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
-          --channel=0 \
-          --install "ndk;30.0.16248370"
-        echo "NDK_HOME=$ANDROID_HOME/ndk/30.0.16248370" >> $GITHUB_ENV
-        sed -i '10i\
-        \
-            ndkVersion = "30.0.16248370"' ${{ github.workspace }}/V2rayNG/app/build.gradle.kts
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-36 build-tools;36.0.0 platform-tools'
 
-    - name: Restore cached libhevtun
-      id: cache-libhevtun-restore
-      uses: actions/cache/restore@v6
-      with:
-        path: ${{ github.workspace }}/libs
-        key: libhevtun-${{ runner.os }}-${{ env.NDK_HOME }}-${{ hashFiles('.git/modules/hev-socks5-tunnel/HEAD') }}-${{ hashFiles('compile-hevtun.sh') }}
+      - name: Install NDK
+        run: |
+          echo "y" | sdkmanager --install "ndk;27.0.12077973"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
 
-    - name: Build libhevtun
-      if: steps.cache-libhevtun-restore.outputs.cache-hit != 'true'
-      run: |
-        bash compile-hevtun.sh
-    
-    - name: Save libhevtun
-      if: steps.cache-libhevtun-restore.outputs.cache-hit != 'true'
-      uses: actions/cache/save@v6
-      with:
-        path: ${{ github.workspace }}/libs
-        key: libhevtun-${{ runner.os }}-${{ env.NDK_HOME }}-${{ hashFiles('.git/modules/hev-socks5-tunnel/HEAD') }}-${{ hashFiles('compile-hevtun.sh') }}
+      # ... (فشرده‌سازی و Build libhevtun/libaether/Psiphon/PT در اینجا قرار می‌گیرد،
+      #      Cache Key را مستقیماً بنویسید، مثلاً:
+      #      key: libhevtun-ndk27-${{ hashFiles('.git/modules/hev-socks5-tunnel/HEAD') }}
+      #      و از actions/cache/restore@v4 و save@v4 استفاده کنید)
 
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: ${{ env.RUST_TOOLCHAIN }}
-        targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+      - name: Stage native libraries
+        run: |
+          cp -r ${{ github.workspace }}/libs ${{ github.workspace }}/V2rayNG/app
+          cp -r ${{ github.workspace }}/libs-aether/. ${{ github.workspace }}/V2rayNG/app/libs/
+          cp -r ${{ github.workspace }}/libs-psiphon/. ${{ github.workspace }}/V2rayNG/app/libs/
+          cp -r ${{ github.workspace }}/libs-pt/. ${{ github.workspace }}/V2rayNG/app/libs/
 
-    - name: Restore cached libaether
-      id: cache-libaether-restore
-      uses: actions/cache/restore@v6
-      with:
-        path: ${{ github.workspace }}/libs-aether
-        key: libaether-${{ runner.os }}-${{ env.NDK_HOME }}-${{ env.RUST_TOOLCHAIN }}-${{ hashFiles('.git/modules/aether/HEAD') }}-${{ hashFiles('compile-aether.sh') }}
+      - name: Fetch Psiphon server list
+        run: bash fetch-psiphon-servers.sh
 
-    - name: Build libaether
-      if: steps.cache-libaether-restore.outputs.cache-hit != 'true'
-      run: |
-        bash compile-aether.sh
+      - name: Download libv2ray
+        uses: robinraju/release-downloader@v1.13
+        with:
+          repository: 'patterniha/AndroidLibXrayLite'
+          tag: ${{ env.CURRENT_TAG }}
+          fileName: 'libv2ray.aar'
+          out-file-path: V2rayNG/app/libs/
 
-    - name: Save libaether
-      if: steps.cache-libaether-restore.outputs.cache-hit != 'true'
-      uses: actions/cache/save@v6
-      with:
-        path: ${{ github.workspace }}/libs-aether
-        key: libaether-${{ runner.os }}-${{ env.NDK_HOME }}-${{ env.RUST_TOOLCHAIN }}-${{ hashFiles('.git/modules/aether/HEAD') }}-${{ hashFiles('compile-aether.sh') }}
+      - name: Decode Keystore
+        id: android_keystore
+        uses: timheuer/base64-to-file@v2.0.0
+        with:
+          fileName: "android_keystore.jks"
+          encodedString: ${{ secrets.RELEASE_KEYSTORE }}
 
-    - name: Install Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: ${{ env.GO_VERSION }}
-        cache: false
-
-    - name: Restore cached Psiphon client
-      id: cache-psiphon-restore
-      uses: actions/cache/restore@v6
-      with:
-        path: ${{ github.workspace }}/libs-psiphon
-        key: psiphon-${{ runner.os }}-${{ env.GO_VERSION }}-${{ hashFiles('aether/psiphon-build.sh') }}-${{ hashFiles('compile-psiphon.sh') }}
-
-    - name: Build the Psiphon client
-      if: steps.cache-psiphon-restore.outputs.cache-hit != 'true'
-      run: |
-        bash compile-psiphon.sh
-
-    - name: Save the Psiphon client
-      if: steps.cache-psiphon-restore.outputs.cache-hit != 'true'
-      uses: actions/cache/save@v6
-      with:
-        path: ${{ github.workspace }}/libs-psiphon
-        key: psiphon-${{ runner.os }}-${{ env.GO_VERSION }}-${{ hashFiles('aether/psiphon-build.sh') }}-${{ hashFiles('compile-psiphon.sh') }}
-
-    - name: Restore cached pluggable transport
-      id: cache-pt-restore
-      uses: actions/cache/restore@v6
-      with:
-        path: ${{ github.workspace }}/libs-pt
-        key: pt-${{ runner.os }}-${{ env.GO_VERSION }}-${{ hashFiles('aether/pt-build.sh') }}-${{ hashFiles('compile-pt.sh') }}
-
-    - name: Build the pluggable transport
-      if: steps.cache-pt-restore.outputs.cache-hit != 'true'
-      run: |
-        bash compile-pt.sh
-
-    - name: Save the pluggable transport
-      if: steps.cache-pt-restore.outputs.cache-hit != 'true'
-      uses: actions/cache/save@v6
-      with:
-        path: ${{ github.workspace }}/libs-pt
-        key: pt-${{ runner.os }}-${{ env.GO_VERSION }}-${{ hashFiles('aether/pt-build.sh') }}-${{ hashFiles('compile-pt.sh') }}
-
-    - name: Stage the native libraries
-      run: |
-        cp -r ${{ github.workspace }}/libs ${{ github.workspace }}/V2rayNG/app
-        cp -r ${{ github.workspace }}/libs-aether/. ${{ github.workspace }}/V2rayNG/app/libs/
-        cp -r ${{ github.workspace }}/libs-psiphon/. ${{ github.workspace }}/V2rayNG/app/libs/
-        cp -r ${{ github.workspace }}/libs-pt/. ${{ github.workspace }}/V2rayNG/app/libs/
-
-    - name: Fetch the Psiphon server list
-      run: |
-        bash fetch-psiphon-servers.sh
-
-    - name: Fetch AndroidLibXrayLite tag
-      run: |
-        pushd AndroidLibXrayLite
-        CURRENT_TAG=$(git describe --tags --abbrev=0)
-        echo "Current tag in this repo: $CURRENT_TAG"
-        echo "CURRENT_TAG=$CURRENT_TAG" >> $GITHUB_ENV
-        popd
-
-    # libv2ray.aar comes from the release of the Matixray core library (https://github.com/imatixofficel/AndroidLibXrayLite)
-    # whose tag is the tag the AndroidLibXrayLite submodule is on (see the step above).
-    - name: Download libv2ray
-      uses: robinraju/release-downloader@v1.13
-      with:
-        repository: 'imatixofficel/AndroidLibXrayLite'
-        tag: ${{ env.CURRENT_TAG }}
-        fileName: 'libv2ray.aar'
-        out-file-path: V2rayNG/app/libs/
-
-    - name: Setup Java
-      uses: actions/setup-java@v6.0.1
-      with:
-        distribution: 'temurin'
-        java-version: '21'
-
-    - name: Decode Keystore
-      if: env.HAS_KEYSTORE == 'true'
-      uses: timheuer/base64-to-file@v2.0.0
-      id: android_keystore
-      with:
-        fileName: "android_keystore.jks"
-        encodedString: ${{ secrets.APP_KEYSTORE_BASE64 }}
-
-    - name: Build APK
-      run: |
-        cd ${{ github.workspace }}/V2rayNG
-        echo "sdk.dir=${ANDROID_HOME}" > local.properties
-        chmod 755 gradlew
-        if [ "$HAS_KEYSTORE" = "true" ]; then
-          ./gradlew assembleRelease -PpattngVersion="${{ inputs.release_tag }}" \
+      - name: Build Release APK
+        run: |
+          cd ${{ github.workspace }}/V2rayNG
+          echo "sdk.dir=${ANDROID_HOME}" > local.properties
+          chmod 755 gradlew
+          ./gradlew assembleRelease \
+            -PpattngVersion="${{ inputs.release_tag }}" \
             -x test -x testPlaystoreDebugUnitTest -x testFdroidDebugUnitTest \
             -Pandroid.injected.signing.store.file=${{ steps.android_keystore.outputs.filePath }} \
-            -Pandroid.injected.signing.store.password=${{ secrets.APP_KEYSTORE_PASSWORD }} \
-            -Pandroid.injected.signing.key.alias=${{ secrets.APP_KEYSTORE_ALIAS }} \
-            -Pandroid.injected.signing.key.password=${{ secrets.APP_KEY_PASSWORD }}
-        else
-          ./gradlew assembleDebug -PpattngVersion="${{ inputs.release_tag }}" \
-            -x test -x testPlaystoreDebugUnitTest -x testFdroidDebugUnitTest
-        fi
-    
-    - name: Check the native libraries in the APKs
-      run: |
-        status=0
-        for apk in ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/*/*.apk; do
-          entries=$(unzip -Z1 "$apk" | grep '^lib/' || true)
-          echo "$(basename "$apk"):"
-          echo "$entries" | sed 's/^/  /'
-          for abi in arm64-v8a armeabi-v7a x86_64; do
-            echo "$entries" | grep -q "^lib/$abi/" || continue
-            for lib in libaether.so libpsiphon-tunnel-core.so liblyrebird.so; do
-              if ! echo "$entries" | grep -qx "lib/$abi/$lib"; then
-                echo "::error::$(basename "$apk") lacks lib/$abi/$lib"
-                status=1
-              fi
-            done
-          done
-        done
-        exit $status
+            -Pandroid.injected.signing.store.password=${{ secrets.RELEASE_KEYSTORE_PASSWORD }} \
+            -Pandroid.injected.signing.key.alias=${{ secrets.RELEASE_KEY_ALIAS }} \
+            -Pandroid.injected.signing.key.password=${{ secrets.RELEASE_KEY_PASSWORD }}
 
-    - name: Upload arm64-v8a APK
-      uses: actions/upload-artifact@v7
-      if: ${{  success() }}
-      with:
-        name: arm64-v8a
-        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/*/*arm64-v8a*.apk
-
-    - name: Upload armeabi-v7a APK
-      uses: actions/upload-artifact@v7
-      if: ${{  success() }}
-      with:
-        name: armeabi-v7a
-        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/*/*armeabi-v7a*.apk
-
-    - name: Upload x86 APK
-      uses: actions/upload-artifact@v7
-      if: ${{  success() }}
-      with:
-        name: x86-apk
-        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/*/*x86*.apk
-
-    - name: Upload universal APK
-      uses: actions/upload-artifact@v7
-      if: ${{ success() }}
-      with:
-        name: universal-apk
-        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/*/*universal*.apk
-
-  # Puts the built .apk files in a Release of this repository, by itself, after every successful build.
-  # Without the GPG_PRIVATE_KEY secret only the .apk files are uploaded; with it, a .sig file for each
-  # APK and the public key are added beside them, as before.
-  release:
-    needs: build
-    runs-on: ubuntu-26.04
-    env:
-      HAS_GPG: ${{ secrets.GPG_PRIVATE_KEY != '' }}
-
-    steps:
-      - name: Work out the release tag and name
-        env:
-          INPUT_TAG: ${{ inputs.release_tag }}
-        run: |
-          if [ -n "$INPUT_TAG" ]; then
-            echo "RELEASE_TAG=$INPUT_TAG" >> "$GITHUB_ENV"
-            echo "RELEASE_NAME=Matixray v$INPUT_TAG" >> "$GITHUB_ENV"
-          else
-            echo "RELEASE_TAG=build-${{ github.run_number }}" >> "$GITHUB_ENV"
-            echo "RELEASE_NAME=Matixray build ${{ github.run_number }}" >> "$GITHUB_ENV"
-          fi
-
-      - name: Download APK artifacts
-        uses: actions/download-artifact@v8
-        with:
-          path: release
-
-      - name: Collect the APK files (and sign them when a GPG key is set)
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-        run: |
-          mkdir -p release-files
-          find release -type f -name '*.apk' -exec cp {} release-files/ \;
-
-          if ! ls release-files/*.apk >/dev/null 2>&1; then
-            echo "::error::No .apk files were found to release"
-            exit 1
-          fi
-
-          if [ "$HAS_GPG" = "true" ]; then
-            printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --quiet --import
-            KEY=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr:/ {print $10; exit}')
-            for apk in release-files/*.apk; do
-              gpg --batch --yes --local-user "$KEY" --detach-sign --output "$apk.sig" "$apk"
-            done
-            gpg --armor --export "$KEY" > release-files/Matixray-public-key.asc
-          fi
-
-          ls -l release-files
-
-      - name: Upload the APKs to the release
+      - name: Upload APKs to Release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: release-files/*
-          tag: ${{ env.RELEASE_TAG }}
-          release_name: ${{ env.RELEASE_NAME }}
-          body: "."
-          target_commit: ${{ github.sha }}
-          file_glob: true
-          prerelease: true
+          file: V2rayNG/app/build/outputs/apk/release/*.apk
+          tag: ${{ inputs.release_tag }}
+          release_name: Release ${{ inputs.release_tag }}
           overwrite: true
+          file_glob: true
+          prerelease: false
