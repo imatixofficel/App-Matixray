@@ -1,5 +1,10 @@
 name: Build APK
 
+# App-Matixray (https://github.com/imatixofficel/App-Matixray), branch master.
+# Every successful build puts its .apk files in a GitHub Release of this repository:
+#   - push to master                    -> release "Matixray build N" (tag build-N)
+#   - manual run with a release_tag     -> release "Matixray v<release_tag>" (tag <release_tag>)
+#   - manual run without a release_tag  -> same as a push
 on:
   workflow_dispatch:
     inputs:
@@ -156,10 +161,12 @@ jobs:
         echo "CURRENT_TAG=$CURRENT_TAG" >> $GITHUB_ENV
         popd
 
+    # libv2ray.aar comes from the release of the Matixray core library (https://github.com/imatixofficel/AndroidLibXrayLite)
+    # whose tag is the tag the AndroidLibXrayLite submodule is on (see the step above).
     - name: Download libv2ray
       uses: robinraju/release-downloader@v1.13
       with:
-        repository: 'patterniha/AndroidLibXrayLite'
+        repository: 'imatixofficel/AndroidLibXrayLite'
         tag: ${{ env.CURRENT_TAG }}
         fileName: 'libv2ray.aar'
         out-file-path: V2rayNG/app/libs/
@@ -242,36 +249,63 @@ jobs:
         name: universal-apk
         path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/*/*universal*.apk
 
-  sign-and-release:
+  # Puts the built .apk files in a Release of this repository, by itself, after every successful build.
+  # Without the GPG_PRIVATE_KEY secret only the .apk files are uploaded; with it, a .sig file for each
+  # APK and the public key are added beside them, as before.
+  release:
     needs: build
     runs-on: ubuntu-26.04
-    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+    env:
+      HAS_GPG: ${{ secrets.GPG_PRIVATE_KEY != '' }}
 
     steps:
+      - name: Work out the release tag and name
+        env:
+          INPUT_TAG: ${{ inputs.release_tag }}
+        run: |
+          if [ -n "$INPUT_TAG" ]; then
+            echo "RELEASE_TAG=$INPUT_TAG" >> "$GITHUB_ENV"
+            echo "RELEASE_NAME=Matixray v$INPUT_TAG" >> "$GITHUB_ENV"
+          else
+            echo "RELEASE_TAG=build-${{ github.run_number }}" >> "$GITHUB_ENV"
+            echo "RELEASE_NAME=Matixray build ${{ github.run_number }}" >> "$GITHUB_ENV"
+          fi
+
       - name: Download APK artifacts
         uses: actions/download-artifact@v8
         with:
           path: release
 
-      - name: Sign APK files
+      - name: Collect the APK files (and sign them when a GPG key is set)
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
         run: |
-          printf '%s' "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --quiet --import
-          KEY=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr:/ {print $10; exit}')
           mkdir -p release-files
+          find release -type f -name '*.apk' -exec cp {} release-files/ \;
 
-          find release -type f -name '*.apk' | while read apk; do
-            cp "$apk" release-files/
-            gpg --batch --yes --local-user "$KEY" --detach-sign --output "release-files/$(basename "$apk").sig" "$apk"
-          done
+          if ! ls release-files/*.apk >/dev/null 2>&1; then
+            echo "::error::No .apk files were found to release"
+            exit 1
+          fi
 
-          gpg --armor --export "$KEY" > release-files/Matixray-public-key.asc
+          if [ "$HAS_GPG" = "true" ]; then
+            printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --quiet --import
+            KEY=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr:/ {print $10; exit}')
+            for apk in release-files/*.apk; do
+              gpg --batch --yes --local-user "$KEY" --detach-sign --output "$apk.sig" "$apk"
+            done
+            gpg --armor --export "$KEY" > release-files/Matixray-public-key.asc
+          fi
 
-      - name: Upload APKs, signatures and public key to release
+          ls -l release-files
+
+      - name: Upload the APKs to the release
         uses: svenstaro/upload-release-action@v2
         with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: release-files/*
-          tag: ${{ inputs.release_tag }}
-          release_name: Matixray v${{ inputs.release_tag }}
+          tag: ${{ env.RELEASE_TAG }}
+          release_name: ${{ env.RELEASE_NAME }}
           body: "."
           target_commit: ${{ github.sha }}
           file_glob: true
