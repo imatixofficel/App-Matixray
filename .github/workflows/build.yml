@@ -1,29 +1,31 @@
-name: Build and Release APK
+name: Build APK
 
 on:
   workflow_dispatch:
     inputs:
       release_tag:
+        description: 'Release tag (e.g. v1.0.0)'
         required: false
         type: string
   push:
     branches:
       - master
-    tags:
-      - 'v*'
 
 permissions:
   contents: write
 
 jobs:
-  build-and-release:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
-      GO_VERSION: "1.26"
+      RUST_TOOLCHAIN: "stable"
+      GO_VERSION: "1.23"
+      NDK_VERSION: "27.0.12077973"
+      HAS_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE != '' }}
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -41,20 +43,127 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
+          log-accepted-android-sdk-licenses: true
           packages: 'platforms;android-36 build-tools;36.0.0 platform-tools'
 
       - name: Install NDK
         run: |
-          echo "y" | sdkmanager --install "ndk;27.0.12077973"
-          echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
+          echo "y" | sdkmanager --install "ndk;${NDK_VERSION}"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/${NDK_VERSION}" >> $GITHUB_ENV
 
-      # ... (فشرده‌سازی و Build libhevtun/libaether/Psiphon/PT در اینجا قرار می‌گیرد،
-      #      Cache Key را مستقیماً بنویسید، مثلاً:
-      #      key: libhevtun-ndk27-${{ hashFiles('.git/modules/hev-socks5-tunnel/HEAD') }}
-      #      و از actions/cache/restore@v4 و save@v4 استفاده کنید)
+      # ---------- libhevtun ----------
+      - name: Restore cached libhevtun
+        id: cache-libhevtun-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ github.workspace }}/libs
+          key: libhevtun-${{ runner.os }}-ndk${NDK_VERSION}-${{ hashFiles('.git/modules/hev-socks5-tunnel/HEAD') }}-${{ hashFiles('compile-hevtun.sh') }}
+          restore-keys: |
+            libhevtun-${{ runner.os }}-ndk${NDK_VERSION}-
 
-      - name: Stage native libraries
+      - name: Build libhevtun
+        if: steps.cache-libhevtun-restore.outputs.cache-hit != 'true'
+        run: bash compile-hevtun.sh
+
+      - name: Save libhevtun
+        if: steps.cache-libhevtun-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/libs
+          key: libhevtun-${{ runner.os }}-ndk${NDK_VERSION}-${{ hashFiles('.git/modules/hev-socks5-tunnel/HEAD') }}-${{ hashFiles('compile-hevtun.sh') }}
+
+      # ---------- libaether ----------
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+
+      - name: Restore cached libaether
+        id: cache-libaether-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ github.workspace }}/libs-aether
+          key: libaether-${{ runner.os }}-ndk${NDK_VERSION}-${{ env.RUST_TOOLCHAIN }}-${{ hashFiles('.git/modules/aether/HEAD') }}-${{ hashFiles('compile-aether.sh') }}
+          restore-keys: |
+            libaether-${{ runner.os }}-ndk${NDK_VERSION}-
+
+      - name: Build libaether
+        if: steps.cache-libaether-restore.outputs.cache-hit != 'true'
+        run: bash compile-aether.sh
+
+      - name: Save libaether
+        if: steps.cache-libaether-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/libs-aether
+          key: libaether-${{ runner.os }}-ndk${NDK_VERSION}-${{ env.RUST_TOOLCHAIN }}-${{ hashFiles('.git/modules/aether/HEAD') }}-${{ hashFiles('compile-aether.sh') }}
+
+      # ---------- Psiphon ----------
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
+      - name: Restore cached Psiphon client
+        id: cache-psiphon-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ github.workspace }}/libs-psiphon
+          key: psiphon-${{ runner.os }}-go${{ env.GO_VERSION }}-${{ hashFiles('aether/psiphon-build.sh') }}-${{ hashFiles('compile-psiphon.sh') }}
+          restore-keys: |
+            psiphon-${{ runner.os }}-go${{ env.GO_VERSION }}-
+
+      - name: Build the Psiphon client
+        if: steps.cache-psiphon-restore.outputs.cache-hit != 'true'
+        run: bash compile-psiphon.sh
+
+      - name: Save the Psiphon client
+        if: steps.cache-psiphon-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/libs-psiphon
+          key: psiphon-${{ runner.os }}-go${{ env.GO_VERSION }}-${{ hashFiles('aether/psiphon-build.sh') }}-${{ hashFiles('compile-psiphon.sh') }}
+
+      # ---------- Pluggable Transport ----------
+      - name: Restore cached pluggable transport
+        id: cache-pt-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ github.workspace }}/libs-pt
+          key: pt-${{ runner.os }}-go${{ env.GO_VERSION }}-${{ hashFiles('aether/pt-build.sh') }}-${{ hashFiles('compile-pt.sh') }}
+          restore-keys: |
+            pt-${{ runner.os }}-go${{ env.GO_VERSION }}-
+
+      - name: Build the pluggable transport
+        if: steps.cache-pt-restore.outputs.cache-hit != 'true'
+        run: bash compile-pt.sh
+
+      - name: Save the pluggable transport
+        if: steps.cache-pt-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/libs-pt
+          key: pt-${{ runner.os }}-go${{ env.GO_VERSION }}-${{ hashFiles('aether/pt-build.sh') }}-${{ hashFiles('compile-pt.sh') }}
+
+      # ---------- بررسی وجود پوشه‌ها ----------
+      - name: Verify native libraries exist
         run: |
+          set -e
+          for dir in libs libs-aether libs-psiphon libs-pt; do
+            src="${{ github.workspace }}/$dir"
+            if [ ! -d "$src" ]; then
+              echo "::error::Directory $dir does not exist — its build step failed"
+              exit 1
+            fi
+            echo "OK: $dir ($(find "$src" -type f | wc -l) files)"
+          done
+
+      # ---------- Stage کردن کتابخانه‌ها ----------
+      - name: Stage the native libraries
+        run: |
+          set -e
           cp -r ${{ github.workspace }}/libs ${{ github.workspace }}/V2rayNG/app
           cp -r ${{ github.workspace }}/libs-aether/. ${{ github.workspace }}/V2rayNG/app/libs/
           cp -r ${{ github.workspace }}/libs-psiphon/. ${{ github.workspace }}/V2rayNG/app/libs/
@@ -62,6 +171,14 @@ jobs:
 
       - name: Fetch Psiphon server list
         run: bash fetch-psiphon-servers.sh
+
+      - name: Fetch AndroidLibXrayLite tag
+        run: |
+          pushd AndroidLibXrayLite
+          CURRENT_TAG=$(git describe --tags --abbrev=0)
+          echo "Current tag: $CURRENT_TAG"
+          echo "CURRENT_TAG=$CURRENT_TAG" >> $GITHUB_ENV
+          popd
 
       - name: Download libv2ray
         uses: robinraju/release-downloader@v1.13
@@ -71,33 +188,104 @@ jobs:
           fileName: 'libv2ray.aar'
           out-file-path: V2rayNG/app/libs/
 
+      # ---------- امضا ----------
       - name: Decode Keystore
+        if: env.HAS_KEYSTORE == 'true'
         id: android_keystore
         uses: timheuer/base64-to-file@v2.0.0
         with:
           fileName: "android_keystore.jks"
           encodedString: ${{ secrets.RELEASE_KEYSTORE }}
 
-      - name: Build Release APK
+      # ---------- Build APK ----------
+      - name: Build APK
         run: |
+          set -e
           cd ${{ github.workspace }}/V2rayNG
           echo "sdk.dir=${ANDROID_HOME}" > local.properties
           chmod 755 gradlew
-          ./gradlew assembleRelease \
-            -PpattngVersion="${{ inputs.release_tag }}" \
-            -x test -x testPlaystoreDebugUnitTest -x testFdroidDebugUnitTest \
-            -Pandroid.injected.signing.store.file=${{ steps.android_keystore.outputs.filePath }} \
-            -Pandroid.injected.signing.store.password=${{ secrets.RELEASE_KEYSTORE_PASSWORD }} \
-            -Pandroid.injected.signing.key.alias=${{ secrets.RELEASE_KEY_ALIAS }} \
-            -Pandroid.injected.signing.key.password=${{ secrets.RELEASE_KEY_PASSWORD }}
 
+          VERSION_ARG=""
+          if [ -n "${{ inputs.release_tag }}" ]; then
+            VERSION_ARG="-PpattngVersion=${{ inputs.release_tag }}"
+          fi
+
+          if [ "$HAS_KEYSTORE" = "true" ]; then
+            ./gradlew assembleRelease $VERSION_ARG \
+              -x test -x testPlaystoreDebugUnitTest -x testFdroidDebugUnitTest \
+              -Pandroid.injected.signing.store.file=${{ steps.android_keystore.outputs.filePath }} \
+              -Pandroid.injected.signing.store.password=${{ secrets.RELEASE_KEYSTORE_PASSWORD }} \
+              -Pandroid.injected.signing.key.alias=${{ secrets.RELEASE_KEY_ALIAS }} \
+              -Pandroid.injected.signing.key.password=${{ secrets.RELEASE_KEY_PASSWORD }}
+          else
+            ./gradlew assembleDebug $VERSION_ARG \
+              -x test -x testPlaystoreDebugUnitTest -x testFdroidDebugUnitTest
+          fi
+
+      # ---------- بررسی کتابخانه‌ها داخل APK ----------
+      - name: Check native libraries in APKs
+        run: |
+          set -e
+          status=0
+          shopt -s nullglob
+          for apk in ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/*/*.apk; do
+            entries=$(unzip -Z1 "$apk" | grep '^lib/' || true)
+            echo "$(basename "$apk"):"
+            echo "$entries" | sed 's/^/  /'
+            for abi in arm64-v8a armeabi-v7a x86_64; do
+              echo "$entries" | grep -q "^lib/$abi/" || continue
+              for lib in libaether.so libpsiphon-tunnel-core.so liblyrebird.so; do
+                if ! echo "$entries" | grep -qx "lib/$abi/$lib"; then
+                  echo "::error::$(basename "$apk") lacks lib/$abi/$lib"
+                  status=1
+                fi
+              done
+            done
+          done
+          exit $status
+
+      # ---------- بارگذاری Artifact ها ----------
+      - name: Upload arm64-v8a APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arm64-v8a
+          path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/*/*arm64-v8a*.apk
+          if-no-files-found: warn
+
+      - name: Upload armeabi-v7a APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: armeabi-v7a
+          path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/*/*armeabi-v7a*.apk
+          if-no-files-found: warn
+
+      - name: Upload x86 APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: x86-apk
+          path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/*/*x86*.apk
+          if-no-files-found: warn
+
+      - name: Upload universal APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: universal-apk
+          path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/*/*universal*.apk
+          if-no-files-found: warn
+
+      # ---------- انتشار مستقیم روی Release ----------
       - name: Upload APKs to Release
+        if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: V2rayNG/app/build/outputs/apk/release/*.apk
+          file: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/release/*.apk
           tag: ${{ inputs.release_tag }}
-          release_name: Release ${{ inputs.release_tag }}
+          release_name: Matixray ${{ inputs.release_tag }}
           overwrite: true
           file_glob: true
           prerelease: false
