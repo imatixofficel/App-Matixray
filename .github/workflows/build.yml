@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Release tag (e.g. v1.0.0)'
+        description: 'Release tag (e.g. V2.0.0)'
         required: false
         type: string
   push:
@@ -283,7 +283,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/release/*.apk
+          file: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/*/*.apk
           tag: ${{ inputs.release_tag }}
           release_name: Matixray ${{ inputs.release_tag }}
           overwrite: true
