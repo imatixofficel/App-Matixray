@@ -100,7 +100,7 @@ fun MainDrawerContent(drawerState: DrawerState, onNavigate: (MainDestination) ->
 
     ModalDrawerSheet(
         drawerState = drawerState,
-        modifier = Modifier.fillMaxWidth(0.78f),
+        modifier = Modifier.fillMaxWidth(0.82f),
         drawerContainerColor = MaterialTheme.colorScheme.background,
         drawerContentColor = MaterialTheme.colorScheme.onSurface,
     ) {
@@ -112,7 +112,7 @@ fun MainDrawerContent(drawerState: DrawerState, onNavigate: (MainDestination) ->
                     .verticalScroll(drawerScrollState)
                     .verticalScrollbar(drawerScrollState)
                     .statusBarsPadding()
-                    .padding(horizontal = 12.dp)
+                     .padding(horizontal = 10.dp)
             ) {
                 DrawerHeader()
                 // Each part of the menu is one surface with its rows inside, divided by thin lines: no box per item.
@@ -132,8 +132,8 @@ private fun DrawerGroup(items: List<MainDestination>, updateAvailable: Boolean, 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         items.forEachIndexed { index, item ->
             if (index > 0) {
@@ -159,7 +159,7 @@ private fun DrawerHeader() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 24.dp),
+            .padding(vertical = 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -168,7 +168,7 @@ private fun DrawerHeader() {
             painter = painterResource(R.drawable.ic_matixray_logo),
             contentDescription = null,
             modifier = Modifier
-                .size(104.dp)
+                .size(72.dp)
                 .clip(RoundedCornerShape(18.dp))
         )
         Text(
@@ -212,7 +212,7 @@ private fun DrawerRow(item: MainDestination, showNew: Boolean, onClick: () -> Un
             Text(
                 text = stringResource(item.labelRes),
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             if (showNew) {

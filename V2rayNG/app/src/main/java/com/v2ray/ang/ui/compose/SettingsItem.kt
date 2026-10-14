@@ -1,6 +1,9 @@
 package com.v2ray.ang.ui.compose
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -91,18 +94,20 @@ private fun SettingsItemRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surface)
             .then(if (onClick != null) Modifier.clickable(enabled = enabled, onClick = onClick) else Modifier)
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (icon != null) {
             Icon(
                 painter = icon,
                 contentDescription = null,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(22.dp),
                 tint = titleColor
             )
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(14.dp))
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(

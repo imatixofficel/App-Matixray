@@ -1,7 +1,5 @@
 package com.v2ray.ang.ui.main
 
-import android.content.Context
-
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -100,9 +98,6 @@ fun MainScreen(
     // Matixray: a move of a profile the storage refused is told once, each refusal by its number, so that one set again
     // right after the last was told is told too; the groups are shown anew, as stored.
     val context = LocalContext.current
-    var showOnboarding by remember {
-        mutableStateOf(!context.getSharedPreferences("matixray_prefs", Context.MODE_PRIVATE).getBoolean("onboarding_done", false))
-    }
     val failureText = stringResource(R.string.toast_failure)
     val moveRefusal = uiState.moveRefusal
     LaunchedEffect(moveRefusal) {
@@ -268,7 +263,7 @@ fun MainScreen(
                     }
                 )
             },
-            bottomBar = { MainBottomBar(selected = bottomTab, onSelect = { bottomTab = it }) },
+            bottomBar = { MainBottomBar(selected = bottomTab, onSelect = { bottomTab = it }, onSettingsClick = { onNavigate(MainDestination.Settings) }) },
             floatingActionButton = {},
         ) { innerPadding ->
             if (groups.isNotEmpty()) {
@@ -385,17 +380,6 @@ fun MainScreen(
         }
     }
 
-    if (showOnboarding) {
-        MatixrayOnboarding(
-            onFinished = {
-                context.getSharedPreferences("matixray_prefs", Context.MODE_PRIVATE)
-                    .edit()
-                    .putBoolean("onboarding_done", true)
-                    .apply()
-                showOnboarding = false
-            }
-        )
-    }
 }
 
 /**

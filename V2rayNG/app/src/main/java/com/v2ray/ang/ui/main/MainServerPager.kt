@@ -316,19 +316,15 @@ private fun ServerListItem(
     } else {
         null
     }
-    val rowShape = RoundedCornerShape(14.dp)
+    val rowShape = RoundedCornerShape(10.dp)
     Row(
         modifier = Modifier
-            .padding(horizontal = 10.dp, vertical = 3.dp)
+            .padding(horizontal = 8.dp, vertical = 3.dp)
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
-            .liquidGlass(
-                rowShape,
-                tint = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.22f) else Color.Unspecified
-            )
-            .then(
-                if (isSelected) Modifier.border(1.5.dp, MaterialTheme.colorScheme.secondary, rowShape) else Modifier
-            )
+            .clip(rowShape)
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.55f) else MaterialTheme.colorScheme.outlineVariant, rowShape)
             .semantics {
                 if (selectedStateDescription != null) {
                     stateDescription = selectedStateDescription
@@ -339,7 +335,7 @@ private fun ServerListItem(
         Column(
             Modifier
                 .weight(1f)
-                .padding(start = 12.dp, end = 8.dp, top = 7.dp, bottom = 7.dp)
+                .padding(start = 12.dp, end = 6.dp, top = 8.dp, bottom = 8.dp)
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(row.remarks, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge.copy(lineBreak = LineBreak.Paragraph), maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -384,13 +380,13 @@ private fun ServerListItem(
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)), Alignment.Center
                     ) {
-                        Text(row.subscriptionBadge.uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Text(row.subscriptionBadge.uppercase(), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     }
                 }
                 Text(
                     row.statistics,
                     Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -402,7 +398,7 @@ private fun ServerListItem(
                     row.typeDescription,
                     modifier = Modifier.weight(1f, fill = false),
                     style = MaterialTheme.typography.bodySmall,
-                    color = colorConfigType,
+                    color = MaterialTheme.colorScheme.primary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
