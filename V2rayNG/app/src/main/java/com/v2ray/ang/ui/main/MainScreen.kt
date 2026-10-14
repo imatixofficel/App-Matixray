@@ -34,7 +34,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -97,7 +96,6 @@ fun MainScreen(
 
     // Matixray: a move of a profile the storage refused is told once, each refusal by its number, so that one set again
     // right after the last was told is told too; the groups are shown anew, as stored.
-    val context = LocalContext.current
     val failureText = stringResource(R.string.toast_failure)
     val moveRefusal = uiState.moveRefusal
     LaunchedEffect(moveRefusal) {
@@ -263,7 +261,7 @@ fun MainScreen(
                     }
                 )
             },
-            bottomBar = { MainBottomBar(selected = bottomTab, onSelect = { bottomTab = it }, onSettingsClick = { onNavigate(MainDestination.Settings) }) },
+            bottomBar = { MainBottomBar(selected = bottomTab, onSelect = { bottomTab = it }) },
             floatingActionButton = {},
         ) { innerPadding ->
             if (groups.isNotEmpty()) {
