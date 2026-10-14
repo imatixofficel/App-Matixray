@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name" translatable="false">Matixray</string>
+    <string name="mx_xfinder_add_subscription">Add Matix | Xfinder subscription</string>
+    <string name="mx_xfinder_subscription_added">Matix | Xfinder subscription added</string>
+    <string name="mx_onboarding_next">Next</string>
+    <string name="mx_onboarding_prev">Previous</string>
+    <string name="mx_onboarding_done">Start using Matixray</string>
+    <string name="mx_onboarding_title">Matixray quick tour</string>
+    <string name="mx_onboarding_1">Open the menu to access all Matixray sections and settings.</string>
+    <string name="mx_onboarding_2">Use + to add VLESS, QR, clipboard configs or the Matix | Xfinder subscription.</string>
+    <string name="mx_onboarding_3">Your servers stay in compact cards. Ping and connection status appear beside each server.</string>
+    <string name="mx_onboarding_4">The bottom navigation switches between Home, Configs and Settings.</string>
     <string name="app_widget_name">Switch</string>
     <string name="app_tile_name">Switch</string>
     <string name="app_tile_first_use">Add a profile in the app before using this feature.</string>

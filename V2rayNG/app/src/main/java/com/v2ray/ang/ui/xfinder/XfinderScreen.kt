@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -33,12 +34,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.v2ray.ang.extension.toastSuccess
 import com.v2ray.ang.R
 import com.v2ray.ang.ui.compose.XfPurple
+import com.v2ray.ang.dto.entities.SubscriptionItem
+import com.v2ray.ang.handler.MmkvManager
+import com.v2ray.ang.handler.SettingsChangeManager
+import com.v2ray.ang.util.Utils
 
 @Composable
 fun XfinderConfigsScreen(onBack: () -> Unit, viewModel: XfinderViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     XfinderPage(
         title = stringResource(R.string.xf_nav_configs),
@@ -93,6 +100,42 @@ fun XfinderConfigsScreen(onBack: () -> Unit, viewModel: XfinderViewModel) {
                     .padding(top = 8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = XfPurple),
             ) { Text(stringResource(R.string.mx_xfinder_add_all), fontWeight = FontWeight.Bold) }
+            OutlinedButton(
+                onClick = {
+                    val sub = SubscriptionItem(
+                        remarks = "Matix | Xfinder",
+                        url = XfinderSources.TOP20_URL,
+                        enabled = true,
+                        autoUpdate = true,
+                    )
+                    MmkvManager.encodeSubscription(Utils.getUuid(), sub)
+                    SettingsChangeManager.makeSetupGroupTab()
+                    viewModel.refresh()
+                    context.toastSuccess(R.string.mx_xfinder_subscription_added)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp),
+                border = BorderStroke(1.dp, XfPurple.copy(alpha = 0.55f)),
+            ) { Text(stringResource(R.string.mx_xfinder_add_subscription), color = XfPurple, fontWeight = FontWeight.Bold) }
+            OutlinedButton(
+                onClick = {
+                    val sub = SubscriptionItem(
+                        remarks = "Matix | Xfinder",
+                        url = XfinderSources.TOP20_URL,
+                        enabled = true,
+                        autoUpdate = true,
+                    )
+                    MmkvManager.encodeSubscription(Utils.getUuid(), sub)
+                    SettingsChangeManager.makeSetupGroupTab()
+                    viewModel.refresh()
+                    context.toastSuccess(R.string.mx_xfinder_subscription_added)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp),
+                border = BorderStroke(1.dp, XfPurple.copy(alpha = 0.55f)),
+            ) { Text(stringResource(R.string.mx_xfinder_add_subscription), color = XfPurple, fontWeight = FontWeight.Bold) }
             Box(modifier = Modifier.fillMaxSize()) {
                 when {
                     state.items.isNotEmpty() -> LazyColumn(

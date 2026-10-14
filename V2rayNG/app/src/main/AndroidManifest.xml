@@ -217,6 +217,18 @@
                 <data android:host="install-config" />
                 <data android:host="install-sub" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="vless" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="matix" />
+            </intent-filter>
         </activity>
         <activity
             android:name=".ui.checkupdate.CheckUpdateActivity"

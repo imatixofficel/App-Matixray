@@ -100,7 +100,7 @@ fun MainDrawerContent(drawerState: DrawerState, onNavigate: (MainDestination) ->
 
     ModalDrawerSheet(
         drawerState = drawerState,
-        modifier = Modifier.fillMaxWidth(0.82f),
+        modifier = Modifier.fillMaxWidth(0.78f),
         drawerContainerColor = MaterialTheme.colorScheme.background,
         drawerContentColor = MaterialTheme.colorScheme.onSurface,
     ) {
@@ -112,7 +112,7 @@ fun MainDrawerContent(drawerState: DrawerState, onNavigate: (MainDestination) ->
                     .verticalScroll(drawerScrollState)
                     .verticalScrollbar(drawerScrollState)
                     .statusBarsPadding()
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 12.dp)
             ) {
                 DrawerHeader()
                 // Each part of the menu is one surface with its rows inside, divided by thin lines: no box per item.
@@ -132,7 +132,7 @@ private fun DrawerGroup(items: List<MainDestination>, updateAvailable: Boolean, 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
+            .clip(RoundedCornerShape(18.dp))
             .background(MaterialTheme.colorScheme.surfaceContainer)
     ) {
         items.forEachIndexed { index, item ->
@@ -140,7 +140,7 @@ private fun DrawerGroup(items: List<MainDestination>, updateAvailable: Boolean, 
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp)
+                        .padding(horizontal = 16.dp)
                         .height(0.5.dp)
                         .background(MaterialTheme.colorScheme.outlineVariant)
                 )
@@ -169,7 +169,7 @@ private fun DrawerHeader() {
             contentDescription = null,
             modifier = Modifier
                 .size(104.dp)
-                .clip(RoundedCornerShape(28.dp))
+                .clip(RoundedCornerShape(18.dp))
         )
         Text(
             text = stringResource(R.string.app_name),
@@ -194,8 +194,8 @@ private fun DrawerRow(item: MainDestination, showNew: Boolean, onClick: () -> Un
         modifier = Modifier
             .fillMaxWidth()
             .clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick)
-            .heightIn(min = 54.dp)
-            .padding(horizontal = 20.dp),
+            .heightIn(min = 48.dp)
+            .padding(horizontal = 16.dp),
         contentAlignment = Alignment.CenterStart,
     ) {
         Row(
@@ -206,9 +206,9 @@ private fun DrawerRow(item: MainDestination, showNew: Boolean, onClick: () -> Un
                 painter = painterResource(item.iconRes),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(22.dp)
+                modifier = Modifier.size(20.dp)
             )
-            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.width(12.dp))
             Text(
                 text = stringResource(item.labelRes),
                 style = MaterialTheme.typography.bodyLarge,
