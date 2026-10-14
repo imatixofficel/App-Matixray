@@ -30,17 +30,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 // ---- Matixray palette: flat charcoal canvas and cards in the style of the Shadow VPN kit, with the brand lilac where that kit has blue ----
-val XfBackground = Color(0xFFF5F3F8)
-val XfCard = Color(0xFFFDFBFF)
-val XfPurple = Color(0xFF7652D9)
-val XfPurpleDark = Color(0xFF5E42B8)
-val XfPurpleLight = Color(0xFFE9E2FA)
-val XfTextMain = Color(0xFF17131F)
-val XfTextSub = Color(0xFF6F687A)
-val XfTextMuted = Color(0xFF9B93A8)
-val XfBorder = Color(0xFFE5DDF2)
+val XfBackground = Color(0xFF0B1016)
+val XfCard = Color(0xFF131A22)
+val XfPurple = Color(0xFFB69BFF)
+val XfPurpleDark = Color(0xFF9B7BF0)
+val XfPurpleLight = Color(0xFFDACEFF)
+val XfTextMain = Color(0xFFF3F5F9)
+val XfTextSub = Color(0xFF8E98A8)
+val XfTextMuted = Color(0xFF5F6978)
+val XfBorder = Color(0xFF222B36)
 val XfGreen = Color(0xFF22C55E)
-val XfMint = Color(0xFF19A7A0)
 val XfYellow = Color(0xFFFACC15)
 // Psiphon section: orange, so it reads apart from the violet main section
 val XfOrange = Color(0xFFFF8A1F)
@@ -50,15 +49,15 @@ val XfRed = Color(0xFFEF4444)
 val XfProgressTrack = Color(0xFF1B232D)
 
 private val LightColor = lightColorScheme(
-    primary = Color(0xFF7C4DFF),
+    primary = Color(0xFF8A63E6),
     onPrimary = Color(0xFFFFFFFF),
     primaryContainer = Color(0xFFEFE7FF),
     onPrimaryContainer = Color(0xFF2A1560),
-    secondary = Color(0xFF8B5CF6),
+    secondary = Color(0xFF9A78EE),
     onSecondary = Color(0xFFFFFFFF),
     secondaryContainer = Color(0xFFF1EBFF),
     onSecondaryContainer = Color(0xFF2E1A66),
-    tertiary = Color(0xFF33C7A5),
+    tertiary = Color(0xFF16A34A),
     onTertiary = Color(0xFFFFFFFF),
     tertiaryContainer = Color(0xFFC9F4D7),
     onTertiaryContainer = Color(0xFF05301A),
@@ -66,19 +65,19 @@ private val LightColor = lightColorScheme(
     onError = Color(0xFFFFFFFF),
     errorContainer = Color(0xFFFFDAD6),
     onErrorContainer = Color(0xFF410002),
-    background = Color(0xFFF4F2F7),
-    onBackground = Color(0xFF17131F),
+    background = Color(0xFFF3F5F9),
+    onBackground = Color(0xFF0B1016),
     surface = Color(0xFFFFFFFF),
     onSurface = Color(0xFF0B1016),
-    surfaceVariant = Color(0xFFECE9F1),
-    onSurfaceVariant = Color(0xFF756D80),
-    outline = Color(0xFFD9D4DF),
-    outlineVariant = Color(0x227652D9),
+    surfaceVariant = Color(0xFFE9EDF3),
+    onSurfaceVariant = Color(0xFF586273),
+    outline = Color(0xFF8A94A6),
+    outlineVariant = Color(0x338A63E6),
     inverseSurface = Color(0xFF241A4A),
     inverseOnSurface = Color(0xFFF4F1FF),
     inversePrimary = Color(0xFFC9B6FF),
     scrim = Color(0xFF000000),
-    surfaceTint = XfPurple,
+    surfaceTint = Color(0xFF8A63E6),
     surfaceContainerLowest = Color(0xFFFFFFFF),
     surfaceContainerLow = Color(0xFFF8F9FC),
     surfaceContainer = Color(0xFFEFF2F7),
@@ -153,7 +152,7 @@ private fun Typography.withFontFamily(family: FontFamily): Typography = copy(
 )
 
 // Semantic Colors
-val colorPing = Color(0xFF16A085) // Green
+val colorPing = Color(0xFF009966) // Green
 val colorPingRed = Color(0xFFFF4D6D) // Red
 val colorConfigType = Color(0xFFC9B6FF) // Lilac
 val colorFabActive = Color(0xFFB69BFF) // Brand lilac
@@ -173,7 +172,7 @@ val toastTextColor = Color.White // White
 
 object ThemeManager {
     private val _themeMode = MutableStateFlow(
-        MmkvManager.decodeSettingsString(AppConfig.PREF_UI_MODE_NIGHT, "1") ?: "1"
+        MmkvManager.decodeSettingsString(AppConfig.PREF_UI_MODE_NIGHT, "0") ?: "0"
     )
     val themeMode: StateFlow<String> = _themeMode.asStateFlow()
 
@@ -194,7 +193,7 @@ object ThemeManager {
 
     fun refresh() {
         _themeMode.value =
-            MmkvManager.decodeSettingsString(AppConfig.PREF_UI_MODE_NIGHT, "1") ?: "1"
+            MmkvManager.decodeSettingsString(AppConfig.PREF_UI_MODE_NIGHT, "0") ?: "0"
         _dynamicColorEnabled.value =
             MmkvManager.decodeSettingsBool(AppConfig.PREF_DYNAMIC_COLOR, true)
     }

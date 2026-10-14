@@ -70,10 +70,6 @@ class UrlSchemeActivity : BaseComponentActivity() {
         LogUtil.i(AppConfig.TAG, uriString)
 
         var decodedUrl = URLDecoder.decode(uriString, "UTF-8")
-        // MATIX:// is the Matixray alias of the standard VLESS URI.
-        if (decodedUrl.regionMatches(0, "MATIX://", 0, 8, ignoreCase = true)) {
-            decodedUrl = "vless://" + decodedUrl.substring(8)
-        }
         val uri = Uri.parse(decodedUrl)
         if (uri != null) {
             if (uri.fragment.isNullOrEmpty() && !fragment.isNullOrEmpty()) {

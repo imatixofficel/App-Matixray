@@ -32,7 +32,7 @@ import com.v2ray.ang.ui.compose.SlidingPillButton
 
 /** Bottom bar of the home screen, as in Hiddify: Home (the connect pages) and Servers (the list), the selected one on a soft pill. */
 @Composable
-fun MainBottomBar(selected: Int, onSelect: (Int) -> Unit, onSettingsClick: () -> Unit) {
+fun MainBottomBar(selected: Int, onSelect: (Int) -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val colors = NavigationBarItemDefaults.colors(
         selectedIconColor = scheme.primary,
@@ -41,30 +41,19 @@ fun MainBottomBar(selected: Int, onSelect: (Int) -> Unit, onSettingsClick: () ->
         unselectedIconColor = scheme.onSurfaceVariant,
         unselectedTextColor = scheme.onSurfaceVariant,
     )
-    NavigationBar(
-        containerColor = scheme.surface,
-        tonalElevation = 0.dp,
-        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-    ) {
+    NavigationBar(containerColor = scheme.surface, tonalElevation = 0.dp) {
         NavigationBarItem(
             selected = selected == 0,
             onClick = { onSelect(0) },
-            icon = { Icon(painterResource(R.drawable.ic_power_24dp), contentDescription = null, modifier = Modifier.size(22.dp)) },
-            label = { Text(stringResource(R.string.mx_nav_home), fontWeight = FontWeight.SemiBold) },
+            icon = { Icon(painterResource(R.drawable.ic_power_24dp), contentDescription = null) },
+            label = { Text(stringResource(R.string.mx_nav_home)) },
             colors = colors,
         )
         NavigationBarItem(
             selected = selected == 1,
             onClick = { onSelect(1) },
-            icon = { Icon(painterResource(R.drawable.ic_outline_filter_alt_24), contentDescription = null, modifier = Modifier.size(22.dp)) },
-            label = { Text(stringResource(R.string.mx_nav_servers), fontWeight = FontWeight.SemiBold) },
-            colors = colors,
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = onSettingsClick,
-            icon = { Icon(painterResource(R.drawable.ic_settings_24dp), contentDescription = null, modifier = Modifier.size(22.dp)) },
-            label = { Text(stringResource(R.string.title_settings), fontWeight = FontWeight.SemiBold) },
+            icon = { Icon(painterResource(R.drawable.ic_outline_filter_alt_24), contentDescription = null) },
+            label = { Text(stringResource(R.string.mx_nav_servers)) },
             colors = colors,
         )
     }
