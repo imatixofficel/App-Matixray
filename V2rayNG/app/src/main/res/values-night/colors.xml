@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Matixray palette (night): flat charcoal canvas, violet brand -->
-    <color name="xf_background">#0b1016</color>
-    <color name="xf_card">#131a22</color>
+    <color name="xf_background">#110d1d</color>
+    <color name="xf_card">#1a1430</color>
     <color name="xf_purple">#b69bff</color>
-    <color name="xf_text_main">#f3f5f9</color>
-    <color name="xf_text_sub">#8e98a8</color>
-    <color name="xf_text_muted">#5f6978</color>
-    <color name="xf_border">#222b36</color>
-    <color name="xf_progress_track">#1b232d</color>
+    <color name="xf_text_main">#f4f1fb</color>
+    <color name="xf_text_sub">#9e96b8</color>
+    <color name="xf_text_muted">#6b6385</color>
+    <color name="xf_border">#2c2446</color>
+    <color name="xf_progress_track">#241c3f</color>
 </resources>

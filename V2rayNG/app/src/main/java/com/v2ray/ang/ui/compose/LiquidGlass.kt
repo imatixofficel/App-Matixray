@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -46,24 +47,24 @@ class GlassStyle(
 // Matixray: the surfaces are flat now, as in the Shadow VPN kit: a solid card color and a one-pixel border.
 // The old glass fields stay so every caller keeps compiling; only fillTop (the card) and edgeDim (the border) are used.
 val DarkGlassStyle = GlassStyle(
-    fillTop = Color(0xFF131A22),
-    fillBottom = Color(0xFF131A22),
-    edgeLight = Color(0xFF222B36),
-    edgeDim = Color(0xFF222B36),
+    fillTop = Color(0xFF1A1430),
+    fillBottom = Color(0xFF1A1430),
+    edgeLight = Color(0xFF2C2446),
+    edgeDim = Color(0xFF2C2446),
     highlight = Color.Transparent,
 )
 
 val LightGlassStyle = GlassStyle(
     fillTop = Color(0xFFFFFFFF),
     fillBottom = Color(0xFFFFFFFF),
-    edgeLight = Color(0xFFE3E8F0),
-    edgeDim = Color(0xFFE3E8F0),
+    edgeLight = Color(0xFFE6DDF8),
+    edgeDim = Color(0xFFE6DDF8),
     highlight = Color.Transparent,
 )
 
 val LocalGlassStyle = staticCompositionLocalOf { DarkGlassStyle }
 
-val GlassCardShape = RoundedCornerShape(18.dp)
+val GlassCardShape = RoundedCornerShape(14.dp)
 val GlassPillShape = RoundedCornerShape(50)
 
 /** Fill of buttons and selected tabs: the solid accent color. */
@@ -84,7 +85,15 @@ fun Modifier.liquidGlass(
     tint: Color = Color.Unspecified,
 ): Modifier {
     val glass = LocalGlassStyle.current
-    var result = this.clip(shape).background(glass.fillTop)
+    // Day: a soft violet shadow under the card, as the cards of the design float a little over the page.
+    val dark = LocalDarkTheme.current
+    var result = (if (dark) this else this.shadow(
+        elevation = 3.dp,
+        shape = shape,
+        clip = false,
+        ambientColor = Color(0x1F7B5CE0),
+        spotColor = Color(0x1F7B5CE0),
+    )).clip(shape).background(glass.fillTop)
     if (tint != Color.Unspecified) result = result.background(tint)
     return result.border(1.dp, glass.edgeDim, shape)
 }
@@ -141,17 +150,26 @@ fun GlassSurface(
 fun AppBackdrop(modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
     val dark = LocalDarkTheme.current
-    val glow = if (dark) Color(0x33B69BFF) else Color(0x228A63E6)
+    val glow = if (dark) Color(0x33B69BFF) else Color.Transparent
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(scheme.background)
             .drawWithCache {
-                val brush = Brush.radialGradient(
-                    listOf(glow, Color.Transparent),
-                    center = Offset(size.width * 0.5f, 0f),
-                    radius = size.width * 1.05f,
-                )
+                // Night: a violet glow from the top. Day: white that fades into a soft violet haze at the top.
+                val brush = if (dark) {
+                    Brush.radialGradient(
+                        listOf(glow, Color.Transparent),
+                        center = Offset(size.width * 0.5f, 0f),
+                        radius = size.width * 1.05f,
+                    )
+                } else {
+                    Brush.verticalGradient(
+                        listOf(glow, Color.Transparent),
+                        startY = 0f,
+                        endY = size.height * 0.42f,
+                    )
+                }
                 onDrawBehind { drawRect(brush) }
             }
     )

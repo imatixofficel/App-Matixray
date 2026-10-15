@@ -67,7 +67,7 @@ fun XfinderBadge(text: String, modifier: Modifier = Modifier) {
         Box(modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)) {
             Text(
                 text = text,
-                color = MaterialTheme.colorScheme.secondary,
+                color = MaterialTheme.colorScheme.primary,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
             )

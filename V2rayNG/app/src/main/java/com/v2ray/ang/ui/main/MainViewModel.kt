@@ -16,6 +16,8 @@ import com.v2ray.ang.dto.entities.ServersCache
 import com.v2ray.ang.dto.entities.SubscriptionCache
 import com.v2ray.ang.extension.delay
 import com.v2ray.ang.extension.isComplexType
+import com.v2ray.ang.handler.ConfigFetcher
+import com.v2ray.ang.handler.ConfigSources
 import com.v2ray.ang.extension.matchesPattern
 import com.v2ray.ang.extension.moveItem
 import com.v2ray.ang.ui.base.BaseViewModel
@@ -149,6 +151,14 @@ class MainViewModel(
     /** True from the "auto connect" tap until the real tests it started have finished. */
     private var autoConnectPending = false
 
+    // Matixray: the "get configs" button. Declared before init, whose work off the main thread may read them.
+    private val _fetchState = MutableStateFlow(ConfigFetchState())
+    val fetchState: StateFlow<ConfigFetchState> = _fetchState.asStateFlow()
+    private var fetchJob: Job? = null
+
+    /** True from the end of a "get configs" download until the tests it started finish; then the list is sorted. */
+    private var sortAfterTests = false
+
     // "Connect to the best server when the server is cut": a probe of the current server every 25 s while connected;
     // two failed probes in a row start the same real-ping search as the auto-connect button.
     private val _autoSwitch = MutableStateFlow(MmkvManager.decodeSettingsBool(AppConfig.PREF_AUTO_SWITCH_ON_DROP, false))
@@ -157,6 +167,15 @@ class MainViewModel(
     val updateAvailable: StateFlow<Boolean> = _updateAvailable.asStateFlow()
     private var probeFailStreak = 0
     private var lastAutoSwitchAtMs = 0L
+
+    // Matixray: the first-run tour is shown once; this remembers that it was finished or skipped.
+    private val _showTutorial = MutableStateFlow(!MmkvManager.decodeSettingsBool(AppConfig.PREF_TUTORIAL_DONE, false))
+    val showTutorial: StateFlow<Boolean> = _showTutorial.asStateFlow()
+
+    fun finishTutorial() {
+        _showTutorial.value = false
+        MmkvManager.encodeSettings(AppConfig.PREF_TUTORIAL_DONE, true)
+    }
 
     fun setAutoSwitch(enabled: Boolean) {
         _autoSwitch.value = enabled
@@ -528,6 +547,7 @@ class MainViewModel(
             MainAction.RemoveInvalidServers -> removeInvalidServerAsync()
             MainAction.SortByTestResults -> sortByTestResultsAsync()
             MainAction.UpdateSubscriptions -> importConfigViaSub()
+            MainAction.FetchConfigs -> toggleFetchConfigs()
             MainAction.ExportAll -> exportAllAsync()
             is MainAction.SelectGroup -> subscriptionIdChanged(action.groupId)
             is MainAction.SelectServer -> updateSelectedGuid(action.guid)
@@ -896,6 +916,118 @@ class MainViewModel(
         }
     }
 
+    // ---------- Get configs from the public lists ----------
+
+    private fun toggleFetchConfigs() {
+        if (_fetchState.value.busy) {
+            fetchJob?.cancel()
+            fetchJob = null
+            cancelAllPing()
+            _fetchState.value = ConfigFetchState()
+            return
+        }
+        fetchConfigs()
+    }
+
+    /**
+     * Reads every source of [ConfigSources], a few at a time, and adds the new configs one by one (each as its own
+     * profile, the list refreshing as they arrive), then tests the group and sorts the best first. A config the app
+     * already holds, or one that came twice, is dropped by the app's own duplicate identity.
+     */
+    private fun fetchConfigs() {
+        val sources = ConfigSources.all
+        _fetchState.value = ConfigFetchState(FetchPhase.Downloading, sourcesTotal = sources.size)
+        fetchJob = viewModelScope.launch(ioDispatcher) {
+            try {
+                val seen = HashSet<ProfileItem>()
+                dataSource.getServerGuidList("").forEach { guid ->
+                    val profile = dataSource.decodeServerConfig(guid) ?: return@forEach
+                    if (!profile.configType.isComplexType()) seen += profile.duplicateIdentity()
+                }
+                val importLock = Mutex()
+                var added = 0
+                var done = 0
+                var reachable = 0
+                var lastRefreshAt = 0L
+                ConfigFetcher.fetchAll(sources) { result ->
+                    importLock.withLock {
+                        done++
+                        if (result.links.isNotEmpty()) reachable++
+                        var fromSource = 0
+                        for (link in result.links) {
+                            if (added >= MAX_FETCH_TOTAL || fromSource >= MAX_FETCH_PER_SOURCE) break
+                            currentCoroutineContext().ensureActive()
+                            if (!importFetchedLink(link, seen)) continue
+                            added++
+                            fromSource++
+                            _fetchState.value = ConfigFetchState(FetchPhase.Downloading, done, sources.size, added)
+                            val now = System.currentTimeMillis()
+                            if (now - lastRefreshAt >= FETCH_REFRESH_MS) {
+                                lastRefreshAt = now
+                                setupGroupTab(forceRefresh = true)
+                            }
+                        }
+                        _fetchState.value = ConfigFetchState(FetchPhase.Downloading, done, sources.size, added)
+                    }
+                }
+                currentCoroutineContext().ensureActive()
+                if (added == 0) {
+                    _fetchState.value = ConfigFetchState()
+                    toast(dataSource.getString(if (reachable == 0) R.string.mx_fetch_unreachable else R.string.mx_fetch_none))
+                    return@launch
+                }
+                toast(dataSource.getString(R.string.mx_fetch_result, added, reachable, sources.size))
+                showFetchedGroup()
+                setupGroupTab(forceRefresh = true).join()
+                if (currentServers().isEmpty()) {
+                    _fetchState.value = ConfigFetchState()
+                    return@launch
+                }
+                // testAllRealPing starts with cancelAllPing, which clears the flag and the testing phase, so both
+                // are set after the call.
+                testAllRealPing()
+                _fetchState.value = ConfigFetchState(FetchPhase.Testing, done, sources.size, added)
+                sortAfterTests = true
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (e: Exception) {
+                LogUtil.e(AppConfig.TAG, "Get configs failed", e)
+                _fetchState.value = ConfigFetchState()
+                toastError(R.string.toast_failure)
+            }
+        }
+    }
+
+    /**
+     * Adds one share link as a profile of the default group; false when the app could not read it or already holds
+     * the same profile (the copy just made is removed again).
+     */
+    private suspend fun importFetchedLink(link: String, seen: MutableSet<ProfileItem>): Boolean {
+        val before = dataSource.getServerGuidList("").toHashSet()
+        val count = try {
+            dataSource.importBatchConfig(link, "", true).first
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (e: Exception) {
+            0
+        }
+        if (count <= 0) return false
+        val created = dataSource.getServerGuidList("").firstOrNull { it !in before } ?: return false
+        val profile = dataSource.decodeServerConfig(created)
+        if (profile != null && !profile.configType.isComplexType() && !seen.add(profile.duplicateIdentity())) {
+            dataSource.removeServer(created)
+            return false
+        }
+        return true
+    }
+
+    /** Shows the group the fetched configs went to (the default group, or "All" when the app shows that one). */
+    private fun showFetchedGroup() {
+        val ids = _uiState.value.groups.map { it.id }.toSet()
+        val target = listOf(AppConfig.DEFAULT_SUBSCRIPTION_ID, "").firstOrNull { it in ids } ?: return
+        subscriptionIdChanged(target)
+    }
+
     private fun exportAllAsync() {
         launchLoading {
             withContext(ioDispatcher) {
@@ -1196,6 +1328,8 @@ class MainViewModel(
     // ---------- Testing ----------
     fun cancelAllPing() {
         autoConnectPending = false
+        sortAfterTests = false
+        if (_fetchState.value.phase == FetchPhase.Testing) _fetchState.value = ConfigFetchState()
         bulkTestJob?.cancel()
         bulkTestJob = null
         testRequests.cancelBulk()
@@ -1283,6 +1417,12 @@ class MainViewModel(
         if (testRequests.completeBulk(requestId) == null) return
         resetTestStatus()
         finishAutoConnect()
+        if (sortAfterTests) {
+            // The "get configs" run: the fresh configs are tested, now the best go first.
+            sortAfterTests = false
+            _fetchState.value = ConfigFetchState()
+            sortByTestResultsAsync()
+        }
         viewModelScope.launch(ioDispatcher) {
             cacheMutex.withLock { groupDataCache.clear() }
             reloadAllGroups(_uiState.value.groups.map { it.id })
@@ -1345,6 +1485,11 @@ class MainViewModel(
     internal enum class ReadingFate { SHOW, OVERTAKEN, HOLD_UNTIL_SETTLED, READ_AGAIN }
 
     companion object {
+        /** Matixray: limits of one "get configs" run, so the list and the tests that follow stay small. */
+        private const val MAX_FETCH_TOTAL = 250
+        private const val MAX_FETCH_PER_SOURCE = 40
+        private const val FETCH_REFRESH_MS = 700L
+
         /** Matixray: the update check on start runs once per process, not once per screen. */
         @Volatile
         private var updateCheckedThisProcess = false

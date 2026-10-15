@@ -24,8 +24,8 @@ data class XfinderUiState(
     val items: List<XfinderConfig> = emptyList(),
     val isLoading: Boolean = false,
     val hasError: Boolean = false,
-    /** Share link ([XfinderConfig.raw]) of the row the user last sent to the core. */
-    val selectedRaw: String? = null,
+    /** True while the subscription is being added (saved and downloaded). */
+    val isAddingSubscription: Boolean = false,
 )
 
 class XfinderViewModel(application: Application) : BaseViewModel(application) {
@@ -72,33 +72,33 @@ class XfinderViewModel(application: Application) : BaseViewModel(application) {
         }
     }
 
-    /** Imports the row's config, selects it and hands it to the core via the main screen's restart flag. */
-    fun onConfigClick(config: XfinderConfig) {
+    /**
+     * Adds the Xfinder top 20 link as the subscription "Matix | Xfinder" in one tap (instead of adding configs one by
+     * one); the subscription then keeps itself up to date.
+     */
+    fun addSubscription() {
+        if (_uiState.value.isAddingSubscription) return
+        _uiState.update { it.copy(isAddingSubscription = true) }
         viewModelScope.launch {
-            val guid = repository.importAndSelect(config.raw)
-            if (guid == null) {
-                XfinderLogStore.error("select ${config.protocol} ${config.server}:${config.port}: import failed")
-                toastError(R.string.xf_config_import_failed)
-            } else {
-                XfinderLogStore.info("select ${config.protocol} ${config.server}:${config.port} -> core")
-                _uiState.update { it.copy(selectedRaw = config.raw) }
-                toastSuccess(R.string.xf_config_selected)
-            }
-        }
-    }
-
-    /** Fetches the Top 20 list and adds all of its configs as connection links in one go. */
-    fun addAllTop20() {
-        viewModelScope.launch {
-            val text = repository.fetchText(XfinderSource.TOP20.url)
-            val parsed = withContext(Dispatchers.Default) { XfinderParser.parse(text) }
-            val added = if (parsed.isEmpty()) 0 else repository.importAll(parsed.map { it.raw })
-            if (added <= 0) {
-                XfinderLogStore.error("add all top20: nothing imported")
-                toastError(R.string.xf_config_import_failed)
-            } else {
-                XfinderLogStore.info("add all top20: $added configs")
-                toastSuccess(R.string.xf_all_added)
+            try {
+                XfinderLogStore.info("add subscription ${XfinderSources.SUBSCRIPTION_NAME}")
+                val count = repository.addXfinderSubscription()
+                when {
+                    count == null -> {
+                        XfinderLogStore.error("add subscription: could not be saved")
+                        toastError(R.string.mx_xfinder_sub_failed)
+                    }
+                    count == XfinderRepository.NOT_FETCHED -> {
+                        XfinderLogStore.error("add subscription: saved, download failed")
+                        toast(R.string.mx_xfinder_sub_nofetch)
+                    }
+                    else -> {
+                        XfinderLogStore.info("add subscription: $count configs")
+                        toastSuccess(localizedContext.getString(R.string.mx_xfinder_sub_added, count))
+                    }
+                }
+            } finally {
+                _uiState.update { it.copy(isAddingSubscription = false) }
             }
         }
     }

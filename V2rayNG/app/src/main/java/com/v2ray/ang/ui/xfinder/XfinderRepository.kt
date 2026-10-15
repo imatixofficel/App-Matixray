@@ -2,11 +2,14 @@ package com.v2ray.ang.ui.xfinder
 
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.dto.UrlContentRequest
+import com.v2ray.ang.dto.entities.SubscriptionCache
+import com.v2ray.ang.dto.entities.SubscriptionItem
 import com.v2ray.ang.handler.AngConfigManager
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.SettingsChangeManager
 import com.v2ray.ang.util.HttpUtil
 import com.v2ray.ang.util.LogUtil
+import com.v2ray.ang.util.Utils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -14,6 +17,8 @@ import kotlinx.coroutines.withContext
 object XfinderSources {
     const val TOP20_URL = "https://imatixofficel.github.io/Xfinder/output/top20.txt"
     const val ALL_URL = "https://imatixofficel.github.io/Xfinder/output/all.txt"
+    /** The name the Xfinder subscription gets in the subscription list. */
+    const val SUBSCRIPTION_NAME = "Matix | Xfinder"
     const val SCANNER_URL = "https://imatixofficel.github.io/Scanner-matix/data/clean_ips.json"
 }
 
@@ -71,7 +76,35 @@ class XfinderRepository {
         }
     }
 
-    private companion object {
-        const val FETCH_TIMEOUT_MS = 15_000
+    /**
+     * Adds the Xfinder top 20 link as a subscription named [XfinderSources.SUBSCRIPTION_NAME] (the one already there,
+     * found by its link, when it was added before) and downloads its configs. Returns the number of configs it now
+     * holds, [NOT_FETCHED] when the subscription is saved but the download failed (the updater will try again), or
+     * null when it could not be saved.
+     */
+    suspend fun addXfinderSubscription(): Int? = withContext(Dispatchers.IO) {
+        try {
+            val existing = MmkvManager.decodeSubscriptions()
+                .firstOrNull { it.subscription.url.trim() == XfinderSources.TOP20_URL }
+            val subId = existing?.guid ?: Utils.getUuid()
+            val item = existing?.subscription ?: SubscriptionItem()
+            item.remarks = XfinderSources.SUBSCRIPTION_NAME
+            item.url = XfinderSources.TOP20_URL
+            item.enabled = true
+            item.autoUpdate = true
+            MmkvManager.encodeSubscription(subId, item)
+            val result = AngConfigManager.updateConfigViaSub(SubscriptionCache(subId, item))
+            SettingsChangeManager.makeSetupGroupTab()
+            if (result.successCount > 0) result.configCount else NOT_FETCHED
+        } catch (e: Exception) {
+            LogUtil.e(AppConfig.TAG, "Xfinder: failed to add the subscription", e)
+            null
+        }
+    }
+
+    companion object {
+        /** [addXfinderSubscription]: the subscription was saved but nothing could be downloaded. */
+        const val NOT_FETCHED = -1
+        private const val FETCH_TIMEOUT_MS = 15_000
     }
 }

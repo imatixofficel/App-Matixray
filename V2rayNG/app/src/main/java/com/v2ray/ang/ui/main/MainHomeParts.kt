@@ -30,35 +30,6 @@ import androidx.compose.ui.unit.dp
 import com.v2ray.ang.R
 import com.v2ray.ang.ui.compose.SlidingPillButton
 
-/** Bottom bar of the home screen, as in Hiddify: Home (the connect pages) and Servers (the list), the selected one on a soft pill. */
-@Composable
-fun MainBottomBar(selected: Int, onSelect: (Int) -> Unit) {
-    val scheme = MaterialTheme.colorScheme
-    val colors = NavigationBarItemDefaults.colors(
-        selectedIconColor = scheme.primary,
-        selectedTextColor = scheme.primary,
-        indicatorColor = scheme.primary.copy(alpha = 0.18f),
-        unselectedIconColor = scheme.onSurfaceVariant,
-        unselectedTextColor = scheme.onSurfaceVariant,
-    )
-    NavigationBar(containerColor = scheme.surface, tonalElevation = 0.dp) {
-        NavigationBarItem(
-            selected = selected == 0,
-            onClick = { onSelect(0) },
-            icon = { Icon(painterResource(R.drawable.ic_power_24dp), contentDescription = null) },
-            label = { Text(stringResource(R.string.mx_nav_home)) },
-            colors = colors,
-        )
-        NavigationBarItem(
-            selected = selected == 1,
-            onClick = { onSelect(1) },
-            icon = { Icon(painterResource(R.drawable.ic_outline_filter_alt_24), contentDescription = null) },
-            label = { Text(stringResource(R.string.mx_nav_servers)) },
-            colors = colors,
-        )
-    }
-}
-
 /** The bar under the live numbers that names the selected server; a tap opens the server list. */
 @Composable
 fun SelectedServerCard(name: String?, onClick: () -> Unit, modifier: Modifier = Modifier) {

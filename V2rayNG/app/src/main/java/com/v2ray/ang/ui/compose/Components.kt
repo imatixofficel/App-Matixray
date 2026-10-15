@@ -305,6 +305,8 @@ fun ReorderableListItem(
     val elevation by reorderableElevation(isDragging)
     Surface(
         modifier = Modifier.fillMaxWidth(),
+        // Matixray: see-through, so the cards of the list sit on the page color and not on a white strip
+        color = Color.Transparent,
         shadowElevation = elevation
     ) {
         Row(

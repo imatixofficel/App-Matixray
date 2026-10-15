@@ -32,12 +32,19 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.LayoutDirection
+import com.v2ray.ang.ui.compose.XfMint
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -299,6 +306,50 @@ private fun ServerItemColumn(
     }
 }
 
+/** Text turned a quarter circle up, for the protocol strip at the edge of a config card; it takes the room of the turned text. */
+private fun Modifier.verticalText(): Modifier = this
+    .layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints.copy(minWidth = 0, minHeight = 0, maxWidth = Constraints.Infinity, maxHeight = Constraints.Infinity))
+        layout(placeable.height, placeable.width) {
+            placeable.place(
+                x = -(placeable.width / 2 - placeable.height / 2),
+                y = -(placeable.height / 2 - placeable.width / 2),
+            )
+        }
+    }
+    .rotate(-90f)
+
+private val pingGoodText = Color(0xFF0E9F6E)
+private val pingMidText = Color(0xFFB7791F)
+
+/** The round-cornered ping mark of a config card: green with the delay, red "Timeout" when the test failed. */
+@Composable
+private fun PingPill(delayMillis: Long) {
+    if (delayMillis == 0L) return
+    val failed = delayMillis < 0L
+    val color = when {
+        failed -> colorPingRed
+        delayMillis > 800L -> pingMidText
+        else -> pingGoodText
+    }
+    Text(
+        text = if (failed) stringResource(R.string.mx_timeout) else stringResource(R.string.server_test_delay_value, delayMillis),
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        color = color,
+        maxLines = 1,
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(color.copy(alpha = 0.14f))
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+    )
+}
+
+/**
+ * One config of the list, small and flat like the design: a strip with the protocol written upward on the edge, the
+ * name, the address with the ping mark, and a rail with the edit and share buttons. The selected config gets a violet
+ * frame and a mint strip. The card keeps the left-to-right order of the design in every language.
+ */
 @Composable
 private fun ServerListItem(
     row: ServerRowUiModel,
@@ -306,116 +357,120 @@ private fun ServerListItem(
     doubleColumnDisplay: Boolean,
     actions: ServerRowActions
 ) {
-    val testResult = if (row.testDelayMillis == 0L) {
-        ""
-    } else {
-        stringResource(R.string.server_test_delay_value, row.testDelayMillis)
-    }
+    val scheme = MaterialTheme.colorScheme
     val selectedStateDescription = if (isSelected) {
         stringResource(R.string.acc_selected_server)
     } else {
         null
     }
-    val rowShape = RoundedCornerShape(20.dp)
-    Row(
-        modifier = Modifier
-            .padding(horizontal = 12.dp, vertical = 5.dp)
-            .fillMaxWidth()
-            .height(IntrinsicSize.Min)
-            .liquidGlass(
-                rowShape,
-                tint = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.22f) else Color.Unspecified
-            )
-            .then(
-                if (isSelected) Modifier.border(1.5.dp, MaterialTheme.colorScheme.secondary, rowShape) else Modifier
-            )
-            .semantics {
-                if (selectedStateDescription != null) {
-                    stateDescription = selectedStateDescription
+    val shape = RoundedCornerShape(16.dp)
+    val protocol = row.profile.configType.name
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 14.dp, vertical = 4.dp)
+                .fillMaxWidth()
+                .height(72.dp)
+                .liquidGlass(
+                    shape,
+                    tint = if (isSelected) scheme.primary.copy(alpha = 0.07f) else Color.Unspecified
+                )
+                .then(
+                    if (isSelected) Modifier.border(1.5.dp, scheme.primary, shape) else Modifier
+                )
+                .semantics {
+                    if (selectedStateDescription != null) {
+                        stateDescription = selectedStateDescription
+                    }
                 }
-            }
-            .clickable { actions.select(row.guid) }
-    ) {
-        Column(
-            Modifier
-                .weight(1f)
-                .padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp)
+                .clickable { actions.select(row.guid) },
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(row.remarks, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge.copy(lineBreak = LineBreak.Paragraph), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                if (doubleColumnDisplay) {
-                    IconButton(onClick = { actions.more(row.guid, row.profile) }, Modifier.size(36.dp)) {
-                        Icon(
-                            painterResource(R.drawable.ic_more_vert_24dp),
-                            stringResource(R.string.acc_more),
-                            Modifier.size(24.dp)
-                        )
-                    }
-                } else {
-                    IconButton(onClick = { actions.share(row.guid, row.profile) }, Modifier.size(36.dp)) {
-                        Icon(
-                            painterResource(R.drawable.ic_share_24dp),
-                            stringResource(R.string.title_configuration_share),
-                            Modifier.size(24.dp)
-                        )
-                    }
-                    IconButton(onClick = { actions.edit(row.guid, row.profile) }, Modifier.size(36.dp)) {
-                        Icon(
-                            painterResource(R.drawable.ic_edit_24dp),
-                            stringResource(R.string.acc_edit),
-                            Modifier.size(24.dp)
-                        )
-                    }
-                    IconButton(onClick = { actions.remove(row.guid, row.remarks) }, Modifier.size(36.dp)) {
-                        Icon(
-                            painterResource(R.drawable.ic_delete_24dp),
-                            stringResource(R.string.acc_delete),
-                            Modifier.size(24.dp)
-                        )
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                if (row.subscriptionBadge.isNotBlank()) {
-                    Box(
-                        Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)), Alignment.Center
-                    ) {
-                        Text(row.subscriptionBadge.uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    }
-                }
+            // Protocol strip
+            Box(
+                modifier = Modifier
+                    .width(30.dp)
+                    .fillMaxHeight()
+                    .background(if (isSelected) XfMint.copy(alpha = 0.55f) else scheme.primary.copy(alpha = 0.10f)),
+                contentAlignment = Alignment.Center,
+            ) {
                 Text(
-                    row.statistics,
-                    Modifier.weight(1f),
+                    text = protocol,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp,
+                    color = if (isSelected) scheme.onSecondaryContainer else scheme.primary,
+                    maxLines = 1,
+                    softWrap = false,
+                    modifier = Modifier.verticalText(),
+                )
+            }
+            // Name, address and ping
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 12.dp, end = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp),
+            ) {
+                Text(
+                    text = row.remarks,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.SemiBold,
+                    color = scheme.onSurface,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = row.statistics,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = scheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    PingPill(row.testDelayMillis)
+                }
             }
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(
-                    row.typeDescription,
-                    modifier = Modifier.weight(1f, fill = false),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colorConfigType,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    testResult,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (row.testDelayMillis < 0L) colorPingRed else colorPing,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+            // Rail with the buttons
+            Row(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .background(scheme.surfaceContainerHigh)
+                    .padding(horizontal = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (!doubleColumnDisplay) {
+                    RailButton(R.drawable.ic_edit_24dp, stringResource(R.string.acc_edit)) {
+                        actions.edit(row.guid, row.profile)
+                    }
+                }
+                // Share, with the rest of the server actions (delete) in the same list.
+                RailButton(
+                    if (doubleColumnDisplay) R.drawable.ic_more_vert_24dp else R.drawable.ic_share_24dp,
+                    stringResource(if (doubleColumnDisplay) R.string.acc_more else R.string.title_configuration_share),
+                ) { actions.more(row.guid, row.profile) }
             }
         }
+    }
+}
+
+@Composable
+private fun RailButton(@androidx.annotation.DrawableRes iconRes: Int, description: String, onClick: () -> Unit) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primary),
+    ) {
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = description,
+            tint = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 

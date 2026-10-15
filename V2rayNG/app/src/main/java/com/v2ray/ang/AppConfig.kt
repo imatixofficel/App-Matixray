@@ -97,6 +97,8 @@ object AppConfig {
     const val PREF_IS_BOOTED = "pref_is_booted"
     const val PREF_CHECK_UPDATE_PRE_RELEASE = "pref_check_update_pre_release"
     const val PREF_AUTO_SWITCH_ON_DROP = "pref_auto_switch_on_drop"
+    /** Matixray: set once the first-run tour was finished or skipped. */
+    const val PREF_TUTORIAL_DONE = "pref_tutorial_done"
     const val PREF_SUB_AUTO15_DONE = "pref_sub_auto15_done"
     const val PREF_SPEED_DEFAULT_ON_DONE = "pref_speed_default_on_done"
     const val PREF_GEO_FILES_SOURCES = "pref_geo_files_sources"

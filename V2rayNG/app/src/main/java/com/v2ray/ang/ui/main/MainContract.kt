@@ -41,6 +41,19 @@ data class MainUiState(
     val updateNotice: com.v2ray.ang.dto.CheckUpdateResult? = null
 )
 
+/** Matixray: where the "get configs" button is. */
+enum class FetchPhase { Idle, Downloading, Testing }
+
+/** Matixray: progress of the "get configs" button: sources read so far, configs added so far. */
+data class ConfigFetchState(
+    val phase: FetchPhase = FetchPhase.Idle,
+    val sourcesDone: Int = 0,
+    val sourcesTotal: Int = 0,
+    val added: Int = 0,
+) {
+    val busy: Boolean get() = phase != FetchPhase.Idle
+}
+
 /** Matixray: live traffic of the app in bytes per second, shown under the connect button. */
 data class TrafficSpeed(val downBytesPerSec: Long = 0L, val upBytesPerSec: Long = 0L)
 
@@ -63,6 +76,12 @@ sealed interface MainAction {
     data object RemoveInvalidServers : MainAction
     data object SortByTestResults : MainAction
     data object UpdateSubscriptions : MainAction
+
+    /**
+     * Matixray: reads the public config lists, adds the configs one by one, tests them and sorts the best first;
+     * a second tap while it runs stops it.
+     */
+    data object FetchConfigs : MainAction
     data object ExportAll : MainAction
 
     data object ImportQRcode : MainAction

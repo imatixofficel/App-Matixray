@@ -5,6 +5,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -87,12 +94,30 @@ fun XfinderConfigsScreen(onBack: () -> Unit, viewModel: XfinderViewModel) {
                 ) { RefreshIcon() }
             }
             Button(
-                onClick = viewModel::addAllTop20,
+                onClick = viewModel::addSubscription,
+                enabled = !state.isAddingSubscription,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = XfPurple),
-            ) { Text(stringResource(R.string.mx_xfinder_add_all), fontWeight = FontWeight.Bold) }
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+            ) {
+                if (state.isAddingSubscription) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                    Spacer(Modifier.width(10.dp))
+                }
+                Text(stringResource(R.string.mx_xfinder_add_sub), fontWeight = FontWeight.Bold)
+            }
+            Text(
+                text = stringResource(R.string.mx_xfinder_sub_hint),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 6.dp, start = 4.dp, end = 4.dp),
+            )
             Box(modifier = Modifier.fillMaxSize()) {
                 when {
                     state.items.isNotEmpty() -> LazyColumn(
@@ -100,11 +125,7 @@ fun XfinderConfigsScreen(onBack: () -> Unit, viewModel: XfinderViewModel) {
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 12.dp),
                     ) {
                         items(state.items, key = { it.raw }) { config ->
-                            ConfigRow(
-                                config = config,
-                                isSelected = config.raw == state.selectedRaw,
-                                onClick = { viewModel.onConfigClick(config) },
-                            )
+                            ConfigRow(config = config)
                         }
                     }
 
@@ -142,7 +163,7 @@ private fun SourceButton(label: String, selected: Boolean, onClick: () -> Unit, 
         Button(
             onClick = onClick,
             modifier = modifier.semantics { this.selected = true },
-            colors = ButtonDefaults.buttonColors(containerColor = XfPurple),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
         ) { Text(label, fontWeight = FontWeight.Bold) }
     } else {
         OutlinedButton(
@@ -153,24 +174,22 @@ private fun SourceButton(label: String, selected: Boolean, onClick: () -> Unit, 
     }
 }
 
+/** A config of the list, shown with its ping; the list only previews what the subscription brings, nothing is added from a row. */
 @Composable
-private fun ConfigRow(config: XfinderConfig, isSelected: Boolean, onClick: () -> Unit) {
-    val selectedLabel = stringResource(R.string.xf_state_selected)
+private fun ConfigRow(config: XfinderConfig) {
     val level = pingLevelOf(config.pingMs)
     Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics { if (isSelected) stateDescription = selectedLabel },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = if (isSelected) BorderStroke(1.5.dp, XfPurple) else XfinderCardBorder,
+        border = XfinderCardBorder,
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     XfinderBadge(config.protocol)
                     Text(
@@ -189,11 +208,17 @@ private fun ConfigRow(config: XfinderConfig, isSelected: Boolean, onClick: () ->
                 )
             }
             config.pingMs?.let { ms ->
+                val color = pingColor(level, MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(
                     text = stringResource(R.string.xf_ping_ms, ms),
-                    color = pingColor(level, MaterialTheme.colorScheme.onSurfaceVariant),
+                    color = color,
                     fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.labelMedium,
                     textAlign = TextAlign.End,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(color.copy(alpha = 0.14f))
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
                 )
             }
         }

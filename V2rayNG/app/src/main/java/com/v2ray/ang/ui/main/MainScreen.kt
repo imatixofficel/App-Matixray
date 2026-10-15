@@ -1,5 +1,6 @@
 package com.v2ray.ang.ui.main
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -63,11 +64,12 @@ fun MainScreen(
     val speed by mainViewModel.trafficSpeed.collectAsStateWithLifecycle()
     val autoSwitch by mainViewModel.autoSwitch.collectAsStateWithLifecycle()
     val updateAvailable by mainViewModel.updateAvailable.collectAsStateWithLifecycle()
+    val fetchState by mainViewModel.fetchState.collectAsStateWithLifecycle()
     // Home has two pages side by side, Matixray and Psiphon, moved by a swipe or a tap on the titles; the bottom bar
     // switches between Home (0) and the server list (1).
     val homePager = rememberPagerState(initialPage = 0, pageCount = { 2 })
     var bottomTab by rememberSaveable { mutableStateOf(0) }
-    androidx.activity.compose.BackHandler(enabled = bottomTab != 0) { bottomTab = 0 }
+    androidx.activity.compose.BackHandler(enabled = bottomTab != MainTab.Home) { bottomTab = MainTab.Home }
     val isRunning = uiState.isRunning
 
     // One timer for the connection, kept here so it does not restart when the section changes. The start time is
@@ -107,9 +109,12 @@ fun MainScreen(
         }
     }
 
-    val isDarkTheme = LocalDarkTheme.current
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val tourState = remember { TourState() }
+    val showTutorial by mainViewModel.showTutorial.collectAsStateWithLifecycle()
+    val selectedName = remember(selectedGuid) {
+        selectedGuid?.let { com.v2ray.ang.handler.MmkvManager.decodeServerConfig(it)?.remarks }
+    }
     var showSearch by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var showDelAllConfirm by remember { mutableStateOf(false) }
@@ -214,69 +219,65 @@ fun MainScreen(
         QRCodeDialog(bitmap = shareQRCodeBitmap, onDismiss = { onAction(MainAction.DismissQRCodeDialog) })
     }
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            MainDrawerContent(
-                drawerState = drawerState,
-                updateAvailable = updateAvailable,
-                onNavigate = { route ->
-                    scope.launch { drawerState.close() }
-                    onNavigate(route)
-                }
-            )
-        }
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             containerColor = Color.Transparent,
             contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
-            topBar = {
-                MainTopBar(
-                    isLoading = isLoading,
-                    showSearch = showSearch,
-                    searchQuery = searchQuery,
-                    onSearchQueryChange = { query: String ->
-                        searchQuery = query
-                        onAction(MainAction.Search(query))
-                    },
-                    onSearchClose = {
-                        searchQuery = ""
-                        onAction(MainAction.Search(""))
-                        showSearch = false
-                    },
-                    onSearchToggle = { show: Boolean -> showSearch = show },
-                    onMenuClick = { scope.launch { drawerState.open() } },
-                    onAction = onAction,
-                    onMoreMenuAction = { action ->
-                        when (action) {
-                            MainMoreMenuAction.RestartService -> onAction(MainAction.RestartService)
-                            MainMoreMenuAction.DeleteAll -> showDelAllConfirm = true
-                            MainMoreMenuAction.DeleteDuplicate -> showDelDuplicateConfirm = true
-                            MainMoreMenuAction.DeleteInvalid -> showDelInvalidConfirm = true
-                            MainMoreMenuAction.ExportAll -> onAction(MainAction.ExportAll)
-                            MainMoreMenuAction.LocateSelected -> onAction(MainAction.LocateSelectedServer)
-                            MainMoreMenuAction.SortByTestResults -> onAction(MainAction.SortByTestResults)
-                            MainMoreMenuAction.TestAll -> onAction(MainAction.TestAllServers)
-                            MainMoreMenuAction.TestAllRealPing -> onAction(MainAction.TestRealAllServers)
-                            MainMoreMenuAction.UpdateSubscriptions -> onAction(MainAction.UpdateSubscriptions)
-                        }
+            bottomBar = {
+                Column {
+                    // Matixray: four quick buttons above the connect bar (not on the settings tab).
+                    if (bottomTab != MainTab.Settings) {
+                        MainQuickActions(
+                            fetch = fetchState,
+                            testing = uiState.isTesting,
+                            onFetch = { onAction(MainAction.FetchConfigs) },
+                            onTestAll = {
+                                onAction(if (uiState.isTesting) MainAction.CancelTesting else MainAction.TestRealAllServers)
+                            },
+                            onSort = { onAction(MainAction.SortByTestResults) },
+                            onRemoveDead = { showDelInvalidConfirm = true },
+                        )
                     }
-                )
+                    // The one connect button of the app: the same bar on every tab. On the Psiphon page it connects
+                    // Psiphon, now that the round button of that page is gone.
+                    val onPsiphonPage = bottomTab == MainTab.Home && homePager.currentPage == MainSection.Psiphon.ordinal
+                    MainConnectionBar(
+                        isRunning = if (onPsiphonPage) psiphonActive else isRunning,
+                        onToggle = { onAction(if (onPsiphonPage) MainAction.TogglePsiphon else MainAction.ToggleService) },
+                        onTest = { onAction(MainAction.TestCurrentServer) },
+                        modifier = Modifier.tourTarget(tourState, TourTarget.ConnectionBar),
+                    )
+                    MainBottomBar(selected = bottomTab, onSelect = { bottomTab = it }, tour = tourState)
+                }
             },
-            bottomBar = { MainBottomBar(selected = bottomTab, onSelect = { bottomTab = it }) },
             floatingActionButton = {},
         ) { innerPadding ->
-            if (groups.isNotEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                ) {
-                    if (bottomTab == 0) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                when {
+                    bottomTab == MainTab.Settings -> MainSettingsTab(
+                        isRunning = isRunning,
+                        elapsedSec = { elapsedSec.value },
+                        speed = speed,
+                        autoSwitch = autoSwitch,
+                        onAutoSwitchChange = { mainViewModel.setAutoSwitch(it) },
+                        updateAvailable = updateAvailable,
+                        onNavigate = onNavigate,
+                        tour = tourState,
+                    )
+
+                    groups.isEmpty() -> Unit
+
+                    bottomTab == MainTab.Home -> {
+                        MainPageHeader(subtitle = stringResource(R.string.mx_nav_home))
                         val section = if (homePager.currentPage == 1) MainSection.Psiphon else MainSection.Main
                         MainSectionTabs(
                             selected = section,
                             onSelect = { target -> scope.launch { homePager.animateScrollToPage(target.ordinal) } },
+                            modifier = Modifier.tourTarget(tourState, TourTarget.Sections),
                         )
                         HorizontalPager(
                             state = homePager,
@@ -289,40 +290,87 @@ fun MainScreen(
                                     elapsedSec = { elapsedSec.value },
                                     speed = speed,
                                     pingMillis = uiState.pingMillis,
-                                    onToggle = { onAction(MainAction.TogglePsiphon) },
                                     onStatusClick = { onAction(MainAction.TestCurrentServer) },
                                 )
                             } else {
-                                val selectedName = remember(selectedGuid) {
-                                    selectedGuid?.let { com.v2ray.ang.handler.MmkvManager.decodeServerConfig(it)?.remarks }
-                                }
                                 MainConnectHero(
                                     isRunning = isRunning,
                                     elapsedSec = { elapsedSec.value },
                                     statusText = displayText,
-                                    onToggle = { onAction(MainAction.ToggleService) },
                                     speed = speed,
                                     pingMillis = uiState.pingMillis,
                                     onStatusClick = { onAction(MainAction.TestCurrentServer) },
                                     bottomExtra = {
                                         AutoSwitchRow(checked = autoSwitch, onCheckedChange = { mainViewModel.setAutoSwitch(it) })
-                                        SelectedServerCard(name = selectedName, onClick = { bottomTab = 1 })
+                                        SelectedServerCard(name = selectedName, onClick = { bottomTab = MainTab.Configs })
                                     },
                                 )
                             }
                         }
-                    } else {
-                        AutoConnectButton(
-                            testing = uiState.isTesting,
-                            onClick = { onAction(MainAction.AutoConnectBest) }
+                    }
+
+                    else -> {
+                        MainConfigsHeader(
+                            onAction = onAction,
+                            onMoreMenuAction = { action ->
+                                when (action) {
+                                    MainMoreMenuAction.RestartService -> onAction(MainAction.RestartService)
+                                    MainMoreMenuAction.DeleteAll -> showDelAllConfirm = true
+                                    MainMoreMenuAction.DeleteDuplicate -> showDelDuplicateConfirm = true
+                                    MainMoreMenuAction.DeleteInvalid -> showDelInvalidConfirm = true
+                                    MainMoreMenuAction.ExportAll -> onAction(MainAction.ExportAll)
+                                    MainMoreMenuAction.LocateSelected -> onAction(MainAction.LocateSelectedServer)
+                                    MainMoreMenuAction.SortByTestResults -> onAction(MainAction.SortByTestResults)
+                                    MainMoreMenuAction.TestAll -> onAction(MainAction.TestAllServers)
+                                    MainMoreMenuAction.TestAllRealPing -> onAction(MainAction.TestRealAllServers)
+                                    MainMoreMenuAction.UpdateSubscriptions -> onAction(MainAction.UpdateSubscriptions)
+                                }
+                            },
+                            tour = tourState,
                         )
-                        // Subscriptions also update by themselves every 15 minutes; this is the manual update.
-                        com.v2ray.ang.ui.compose.SlidingPillButton(
-                            text = stringResource(R.string.title_sub_update),
-                            onClick = { onAction(MainAction.UpdateSubscriptions) },
-                            container = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            content = MaterialTheme.colorScheme.onSurface,
-                        )
+                        if (showSearch) {
+                            MainConfigsSearchField(
+                                query = searchQuery,
+                                onQueryChange = { query: String ->
+                                    searchQuery = query
+                                    onAction(MainAction.Search(query))
+                                },
+                                onClose = {
+                                    searchQuery = ""
+                                    onAction(MainAction.Search(""))
+                                    showSearch = false
+                                },
+                            )
+                        } else {
+                            MainConfigsToolbar(
+                                onSort = { onAction(MainAction.SortByTestResults) },
+                                onSearch = { showSearch = true },
+                                onPingAll = { onAction(MainAction.TestRealAllServers) },
+                                tour = tourState,
+                            )
+                        }
+                        if (isLoading || uiState.isTesting) {
+                            // The thin mint line that runs while the app is busy (tests, updates).
+                            androidx.compose.material3.LinearProgressIndicator(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                color = com.v2ray.ang.ui.compose.XfMint,
+                                trackColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            )
+                        }
+                        val shownGroup = groups.getOrNull(pagerState.currentPage.coerceIn(0, groups.lastIndex))
+                        if (shownGroup != null) {
+                            val shownFlow = remember(shownGroup.id, mainViewModel) {
+                                mainViewModel.serversForGroup(shownGroup.id)
+                            }
+                            GroupInfoCard(
+                                group = shownGroup,
+                                serverFlow = shownFlow,
+                                selectedName = selectedName,
+                                onPing = { onAction(MainAction.TestRealAllServers) },
+                            )
+                        }
                         if (groups.size > 1) {
                             GroupTabBar(
                                 groups = groups,
@@ -368,9 +416,9 @@ fun MainScreen(
                                 onRemoveServer = removeServer,
                                 contentPadding = PaddingValues(
                                     start = 0.dp,
-                                    top = 0.dp,
+                                    top = 2.dp,
                                     end = 0.dp,
-                                    bottom = 24.dp
+                                    bottom = 16.dp
                                 )
                             )
                         }
@@ -378,12 +426,24 @@ fun MainScreen(
                 }
             }
         }
+
+        // First run only: the tour that circles the parts of the screen one by one.
+        if (showTutorial) {
+            MainTourOverlay(
+                state = tourState,
+                onTabChange = { bottomTab = it },
+                onFinish = {
+                    bottomTab = MainTab.Home
+                    mainViewModel.finishTutorial()
+                },
+            )
+        }
     }
 }
 
 /**
- * The Psiphon section: its own page in orange, with the same big connect button and live numbers as the main section.
- * The button connects through a Psiphon profile (made on the spot when there is none) or disconnects.
+ * The Psiphon section: its own page in orange, with the same live numbers as the main section. The pill button of the
+ * bar at the bottom connects through a Psiphon profile (made on the spot when there is none) or disconnects.
  */
 @Composable
 private fun PsiphonSection(
@@ -391,14 +451,12 @@ private fun PsiphonSection(
     elapsedSec: () -> Long,
     speed: TrafficSpeed,
     pingMillis: Long?,
-    onToggle: () -> Unit,
     onStatusClick: () -> Unit,
 ) {
     MainConnectHero(
         isRunning = connected,
         elapsedSec = elapsedSec,
         statusText = stringResource(if (connected) R.string.mx_psiphon_connected else R.string.mx_psiphon_connect),
-        onToggle = onToggle,
         speed = speed,
         pingMillis = pingMillis,
         accent = XfOrange,

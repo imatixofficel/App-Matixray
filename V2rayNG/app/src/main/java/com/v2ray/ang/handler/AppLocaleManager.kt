@@ -21,6 +21,10 @@ object AppLocaleManager {
      * Migrates the existing MMKV language preference and restores it before the first activity.
      */
     fun initialize(context: Context) {
+        // Matixray: the very first run opens in Persian; once any language (or "auto") is stored it is never overridden.
+        if (MmkvManager.decodeSettingsString(AppConfig.PREF_LANGUAGE) == null) {
+            MmkvManager.encodeSettings(AppConfig.PREF_LANGUAGE, Language.PERSIAN.code)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             Api33.prepareMigration(context)
         } else {
