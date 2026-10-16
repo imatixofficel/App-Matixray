@@ -23,6 +23,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -49,16 +50,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.v2ray.ang.R
+import androidx.compose.foundation.layout.fillMaxHeight
+import com.v2ray.ang.ui.compose.MatixButtonBrush
+import com.v2ray.ang.ui.compose.MatixSmallCutShape
+import com.v2ray.ang.ui.compose.onMatixButton
 import com.v2ray.ang.ui.compose.verticalScrollbar
 
 /**
- * Header of the configs page: the name at the top left and, at the right, the buttons of the design: scan a QR code,
- * the star (find the best config and connect), add, and the three-dot menu.
+ * Header of the configs page, one short row so the list gets the room: scan a QR code at the left, the name, and at
+ * the right the add button (metal, with the menu that opens the paste box first) and the three-dot menu.
  */
 @Composable
 fun MainConfigsHeader(
     onAction: (MainAction) -> Unit,
     onMoreMenuAction: (MainMoreMenuAction) -> Unit,
+    onManualAdd: () -> Unit,
     tour: TourState,
 ) {
     var showImportMenu by remember { mutableStateOf(false) }
@@ -71,21 +77,18 @@ fun MainConfigsHeader(
 
     MainPageHeader(
         subtitle = stringResource(R.string.mx_nav_configs),
+        compact = true,
         leading = {
             HeaderIcon(R.drawable.ic_qu_scan_24dp, R.string.menu_item_import_config_qrcode) {
                 onAction(MainAction.ImportQRcode)
             }
         },
     ) {
-        HeaderIcon(
-            iconRes = R.drawable.ic_star_24dp,
-            descriptionRes = R.string.mx_auto_connect,
-            modifier = Modifier.tourTarget(tour, TourTarget.AutoBest),
-        ) { onAction(MainAction.AutoConnectBest) }
         Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
             HeaderIcon(
                 iconRes = R.drawable.ic_add_24dp,
                 descriptionRes = R.string.acc_add,
+                filled = true,
                 modifier = Modifier.tourTarget(tour, TourTarget.AddConfig),
             ) { showImportMenu = true }
             DropdownMenu(
@@ -98,6 +101,35 @@ fun MainConfigsHeader(
                     .heightIn(max = maxMenuHeight)
                     .verticalScrollbar(importMenuScrollState)
             ) {
+                // Matixray: typing or pasting configs opens its own box that takes any number of them at once.
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = stringResource(R.string.mx_add_manual_menu),
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_mx_paste_24dp),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    },
+                    onClick = {
+                        showImportMenu = false
+                        onManualAdd()
+                    },
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 2.dp)
+                        .height(0.5.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant),
+                )
                 ImportMenuContent(
                     onAction = { action ->
                         showImportMenu = false
@@ -132,21 +164,43 @@ private fun HeaderIcon(
     @DrawableRes iconRes: Int,
     @StringRes descriptionRes: Int,
     modifier: Modifier = Modifier,
+    filled: Boolean = false,
     onClick: () -> Unit,
 ) {
-    IconButton(onClick = onClick, modifier = modifier.size(42.dp)) {
-        Icon(
-            painter = painterResource(iconRes),
-            contentDescription = stringResource(descriptionRes),
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp),
-        )
+    if (filled) {
+        // The main button of the row: the metal tile with the cut corners of the logo.
+        Box(
+            modifier = modifier
+                .padding(horizontal = 4.dp)
+                .size(36.dp)
+                .clip(MatixSmallCutShape)
+                .background(MatixButtonBrush)
+                .clickable(role = Role.Button, onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = stringResource(descriptionRes),
+                tint = onMatixButton,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+    } else {
+        IconButton(onClick = onClick, modifier = modifier.size(42.dp)) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = stringResource(descriptionRes),
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(22.dp),
+            )
+        }
     }
 }
 
 /**
- * The row under the header: the sort chip ("Ping", sorts the list by the test results), the search button, and the
- * "Ping all" button at the right. Like the header it keeps the left-to-right order of the design.
+ * The row under the header: the sort chip ("Ping", sorts the list by the test results), the search chip, and the
+ * "Ping all" button at the right. Low and framed, so the list starts right under it. Like the header it keeps the
+ * left-to-right order of the design.
  */
 @Composable
 fun MainConfigsToolbar(
@@ -156,19 +210,22 @@ fun MainConfigsToolbar(
     tour: TourState,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val chip = RoundedCornerShape(10.dp)
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 12.dp, top = 4.dp, bottom = 2.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(50))
+                    .height(34.dp)
+                    .clip(chip)
+                    .border(1.dp, scheme.outlineVariant, chip)
                     .clickable(role = Role.Button, onClick = onSort)
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                    .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
@@ -176,35 +233,55 @@ fun MainConfigsToolbar(
                     painter = painterResource(R.drawable.ic_sort_24dp),
                     contentDescription = stringResource(R.string.mx_sort_by_ping),
                     tint = scheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(18.dp),
                 )
                 Text(
                     text = stringResource(R.string.mx_sort_ping),
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
-                    color = scheme.onSurfaceVariant,
+                    color = scheme.onSurface,
                 )
             }
-            IconButton(onClick = onSearch, modifier = Modifier.size(38.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(chip)
+                    .border(1.dp, scheme.outlineVariant, chip)
+                    .clickable(role = Role.Button, onClick = onSearch),
+                contentAlignment = Alignment.Center,
+            ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_search_24dp),
                     contentDescription = stringResource(R.string.acc_search),
                     tint = scheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(18.dp),
                 )
             }
             Box(modifier = Modifier.weight(1f))
-            Text(
-                text = stringResource(R.string.mx_ping_all),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = scheme.primary,
+            Row(
                 modifier = Modifier
                     .tourTarget(tour, TourTarget.PingAll)
-                    .clip(RoundedCornerShape(50))
+                    .height(34.dp)
+                    .clip(chip)
+                    .background(scheme.onSurface.copy(alpha = 0.07f))
                     .clickable(role = Role.Button, onClick = onPingAll)
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-            )
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_speed_24dp),
+                    contentDescription = null,
+                    tint = scheme.onSurface,
+                    modifier = Modifier.size(18.dp),
+                )
+                Text(
+                    text = stringResource(R.string.mx_ping_all),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = scheme.onSurface,
+                )
+            }
         }
     }
 }

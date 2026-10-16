@@ -11,6 +11,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.AbsoluteCutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -47,18 +48,18 @@ class GlassStyle(
 // Matixray: the surfaces are flat now, as in the Shadow VPN kit: a solid card color and a one-pixel border.
 // The old glass fields stay so every caller keeps compiling; only fillTop (the card) and edgeDim (the border) are used.
 val DarkGlassStyle = GlassStyle(
-    fillTop = Color(0xFF1A1430),
-    fillBottom = Color(0xFF1A1430),
-    edgeLight = Color(0xFF2C2446),
-    edgeDim = Color(0xFF2C2446),
+    fillTop = Color(0xFF161617),
+    fillBottom = Color(0xFF161617),
+    edgeLight = Color(0xFF2E2E31),
+    edgeDim = Color(0xFF2E2E31),
     highlight = Color.Transparent,
 )
 
 val LightGlassStyle = GlassStyle(
     fillTop = Color(0xFFFFFFFF),
     fillBottom = Color(0xFFFFFFFF),
-    edgeLight = Color(0xFFE6DDF8),
-    edgeDim = Color(0xFFE6DDF8),
+    edgeLight = Color(0xFFE0E0E5),
+    edgeDim = Color(0xFFE0E0E5),
     highlight = Color.Transparent,
 )
 
@@ -66,6 +67,15 @@ val LocalGlassStyle = staticCompositionLocalOf { DarkGlassStyle }
 
 val GlassCardShape = RoundedCornerShape(14.dp)
 val GlassPillShape = RoundedCornerShape(50)
+
+/**
+ * The signature shape of the main buttons: two opposite corners are cut on the diagonal, like the cuts of the M in the
+ * logo (top right and bottom left), the other two stay square. Absolute, so it looks the same in Persian and English.
+ */
+val MatixCutShape = AbsoluteCutCornerShape(topLeft = 0.dp, topRight = 12.dp, bottomRight = 0.dp, bottomLeft = 12.dp)
+val MatixSmallCutShape = AbsoluteCutCornerShape(topLeft = 0.dp, topRight = 8.dp, bottomRight = 0.dp, bottomLeft = 8.dp)
+/** Shape of the quiet buttons and chips. */
+val MatixButtonShape = RoundedCornerShape(12.dp)
 
 /** Fill of buttons and selected tabs: the solid accent color. */
 val PrimaryGradient: Brush
@@ -85,14 +95,14 @@ fun Modifier.liquidGlass(
     tint: Color = Color.Unspecified,
 ): Modifier {
     val glass = LocalGlassStyle.current
-    // Day: a soft violet shadow under the card, as the cards of the design float a little over the page.
+    // Day: a soft gray shadow under the card, as the cards of the design float a little over the page.
     val dark = LocalDarkTheme.current
     var result = (if (dark) this else this.shadow(
         elevation = 3.dp,
         shape = shape,
         clip = false,
-        ambientColor = Color(0x1F7B5CE0),
-        spotColor = Color(0x1F7B5CE0),
+        ambientColor = Color(0x1F000000),
+        spotColor = Color(0x1F000000),
     )).clip(shape).background(glass.fillTop)
     if (tint != Color.Unspecified) result = result.background(tint)
     return result.border(1.dp, glass.edgeDim, shape)
@@ -150,7 +160,7 @@ fun GlassSurface(
 fun AppBackdrop(modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
     val dark = LocalDarkTheme.current
-    val glow = if (dark) Color(0x33B69BFF) else Color.Transparent
+    val glow = if (dark) Color(0x14FFFFFF) else Color.Transparent
     Box(
         modifier = modifier
             .fillMaxSize()

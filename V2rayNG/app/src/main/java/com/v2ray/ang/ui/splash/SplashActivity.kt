@@ -1,7 +1,9 @@
 package com.v2ray.ang.ui.splash
 
 import android.content.Intent
-import com.v2ray.ang.ui.compose.BouncingDots
+import com.v2ray.ang.AppConfig
+import com.v2ray.ang.handler.MmkvManager
+import com.v2ray.ang.ui.compose.BouncingBallsLoader
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.size
@@ -13,7 +15,11 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
+import com.v2ray.ang.ui.compose.LocalDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -55,7 +61,10 @@ import com.v2ray.ang.ui.compose.liquidGlass
 import com.v2ray.ang.ui.main.MainActivity
 import java.util.Locale
 
-/** Launcher entry: the opening words (always in Persian) fade in over the bouncing dots, in under a second, then hands over to [MainActivity]. */
+/**
+ * Launcher entry: the bouncing balls, with the opening words (always in Persian) above them the first time only,
+ * then it hands over to [MainActivity]. The first time stays long enough for the balls to be seen bouncing.
+ */
 class SplashActivity : BaseComponentActivity() {
 
     @Composable
@@ -73,6 +82,7 @@ class SplashActivity : BaseComponentActivity() {
 
 private const val FADE_IN_MS = 380
 private const val HOLD_MS = 520L
+private const val FIRST_RUN_HOLD_MS = 1700L
 private val splashStatusRes = intArrayOf(
     R.string.xf_splash_status_0,
     R.string.xf_splash_status_1,
@@ -98,15 +108,27 @@ private fun SplashScreen(onFinished: () -> Unit) {
         base.createConfigurationContext(config)
     }
     val title = remember(persianContext) { persianContext.getString(R.string.xf_splash_title) }
+    // The opening words are for the first launch only (an app that was already used before this version has had them).
+    val firstRun = remember {
+        !(MmkvManager.decodeSettingsBool(AppConfig.PREF_SPLASH_SEEN, false) ||
+            MmkvManager.decodeSettingsBool(AppConfig.PREF_TUTORIAL_DONE, false))
+    }
     // The words fade in from the first frame, the infinity loop runs under them, and the app opens after about
     // 0.9 s: one fade, a short hold, nothing else to wait for.
     val fade = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
+        // The loading screen is for the very first launch only; every later start goes straight to the app.
+        if (!firstRun) {
+            onFinished()
+            return@LaunchedEffect
+        }
+        MmkvManager.encodeSettings(AppConfig.PREF_SPLASH_SEEN, true)
         fade.animateTo(1f, tween(durationMillis = FADE_IN_MS, easing = FastOutSlowInEasing))
-        kotlinx.coroutines.delay(HOLD_MS)
+        kotlinx.coroutines.delay(FIRST_RUN_HOLD_MS)
         onFinished()
     }
 
+    if (!firstRun) return
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -121,17 +143,24 @@ private fun SplashScreen(onFinished: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            Text(
-                text = title,
-                color = scheme.onBackground,
-                style = MaterialTheme.typography.displayMedium.copy(fontSize = 38.sp, fontWeight = FontWeight.Bold),
-                textAlign = TextAlign.Center,
+            // The mark of the app. It is black with a soft edge, so the dark theme draws it in white.
+            Image(
+                painter = painterResource(R.drawable.xf_logo),
+                contentDescription = null,
+                colorFilter = if (LocalDarkTheme.current) ColorFilter.tint(Color.White) else null,
+                modifier = Modifier.size(168.dp),
             )
-            Spacer(Modifier.height(40.dp))
-            BouncingDots(
-                color = scheme.primary,
-                dotSize = 14.dp,
-            )
+            Spacer(Modifier.height(if (firstRun) 20.dp else 28.dp))
+            if (firstRun) {
+                Text(
+                    text = title,
+                    color = scheme.onBackground,
+                    style = MaterialTheme.typography.displayMedium.copy(fontSize = 38.sp, fontWeight = FontWeight.Bold),
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(32.dp))
+            }
+            BouncingBallsLoader()
         }
         Text(
             text = stringResource(R.string.xf_brand),

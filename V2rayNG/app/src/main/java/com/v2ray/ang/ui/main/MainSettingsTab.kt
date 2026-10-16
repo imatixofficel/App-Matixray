@@ -23,6 +23,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.ui.graphics.Color
+import com.v2ray.ang.ui.compose.XfConnected
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -180,7 +183,7 @@ private fun SettingsCard(modifier: Modifier = Modifier, content: @Composable () 
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surface)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
     ) { content() }
 }
@@ -196,20 +199,23 @@ private fun RowDivider() {
     )
 }
 
-/** The little violet square behind the icon of a row. */
+/** The small rounded tile behind the icon of a row: a neutral fill, a hairline frame, the icon centered in it. */
 @Composable
 private fun RowIcon(@DrawableRes iconRes: Int) {
+    val scheme = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(10.dp)
     Box(
         modifier = Modifier
             .size(34.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+            .clip(shape)
+            .background(scheme.onSurface.copy(alpha = 0.07f))
+            .border(1.dp, scheme.outlineVariant, shape),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             painter = painterResource(iconRes),
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
+            tint = scheme.onSurface,
             modifier = Modifier.size(19.dp),
         )
     }
@@ -305,7 +311,15 @@ private fun SwitchRow(@DrawableRes iconRes: Int, label: String, checked: Boolean
             modifier = Modifier.weight(1f),
             maxLines = 2,
         )
-        Switch(checked = checked, onCheckedChange = null)
+        Switch(
+            checked = checked,
+            onCheckedChange = null,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = XfConnected,
+                checkedBorderColor = XfConnected,
+            ),
+        )
     }
 }
 

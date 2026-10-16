@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Background of the adaptive launcher icon: the white tile of the Matixray mark -->
+    <color name="xf_icon_bg">#FFFFFF</color>
+</resources>

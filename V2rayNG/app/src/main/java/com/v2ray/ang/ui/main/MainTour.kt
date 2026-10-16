@@ -61,7 +61,7 @@ enum class TourTarget {
     TabConfigs,
     TabSettings,
     AddConfig,
-    AutoBest,
+    QuickActions,
     PingAll,
     ConnectionBar,
     SettingsTools,
@@ -87,11 +87,11 @@ private class TourStep(
 private val tourSteps = listOf(
     TourStep(null, 0, R.string.mx_tour_welcome_title, R.string.mx_tour_welcome_body),
     TourStep(TourTarget.ConnectionBar, 0, R.string.mx_tour_connect_title, R.string.mx_tour_connect_body),
+    TourStep(TourTarget.QuickActions, 0, R.string.mx_tour_quick_title, R.string.mx_tour_quick_body),
     TourStep(TourTarget.Sections, 0, R.string.mx_tour_sections_title, R.string.mx_tour_sections_body),
     TourStep(TourTarget.TabConfigs, 0, R.string.mx_tour_tab_configs_title, R.string.mx_tour_tab_configs_body),
     TourStep(TourTarget.AddConfig, 1, R.string.mx_tour_add_title, R.string.mx_tour_add_body),
     TourStep(TourTarget.PingAll, 1, R.string.mx_tour_ping_title, R.string.mx_tour_ping_body),
-    TourStep(TourTarget.AutoBest, 1, R.string.mx_tour_best_title, R.string.mx_tour_best_body),
     TourStep(TourTarget.TabSettings, 1, R.string.mx_tour_tab_settings_title, R.string.mx_tour_tab_settings_body),
     TourStep(TourTarget.SettingsTools, 2, R.string.mx_tour_tools_title, R.string.mx_tour_tools_body),
 )
@@ -133,7 +133,7 @@ fun MainTourOverlay(
                 .fillMaxSize()
                 .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen },
         ) {
-            drawRect(Color(0xD11A1033))
+            drawRect(Color(0xD1000000))
             if (circled != null) {
                 val pad = 6.dp.toPx()
                 val topLeft = Offset(circled.left - pad, circled.top - pad)
