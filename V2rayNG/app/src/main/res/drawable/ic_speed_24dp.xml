@@ -5,13 +5,9 @@
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:pathData="M4 19V15.2L7.6 8.2 12 5.6 16.4 8.2 20 15.2V19"
+        android:pathData="M4 16a8 8 0 0 1 16 0 M12 16l3.6-5"
         android:strokeColor="#FF000000"
         android:strokeWidth="2"
-        android:strokeLineJoin="miter"
-        android:strokeMiterLimit="8"
-        android:strokeLineCap="butt" />
-    <path
-        android:pathData="M10.9 17.4l.9-1.2 4-6.4-1 7z"
-        android:fillColor="#FF000000" />
+        android:strokeLineJoin="round"
+        android:strokeLineCap="round" />
 </vector>

@@ -68,6 +68,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import com.v2ray.ang.ui.compose.MatixButtonBrush
 import com.v2ray.ang.ui.compose.MatixButtonShape
 import com.v2ray.ang.ui.compose.MatixCutShape
+import com.v2ray.ang.ui.compose.XfBlue
 import com.v2ray.ang.ui.compose.XfConnected
 import com.v2ray.ang.ui.compose.XfConnectedLight
 import com.v2ray.ang.ui.compose.onMatixButton
@@ -174,8 +175,8 @@ private fun BrandTitle(size: TextUnit, small: Boolean) {
             color = scheme.onSurfaceVariant,
             modifier = Modifier
                 .padding(start = if (small) 8.dp else 10.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .border(1.dp, scheme.outlineVariant, RoundedCornerShape(6.dp))
+                .clip(RoundedCornerShape(50))
+                .border(1.dp, scheme.outlineVariant, RoundedCornerShape(50))
                 .padding(horizontal = 6.dp, vertical = 1.dp),
         )
     }
@@ -186,9 +187,9 @@ private fun BrandTitle(size: TextUnit, small: Boolean) {
 fun MainBottomBar(selected: Int, onSelect: (Int) -> Unit, tour: TourState) {
     val scheme = MaterialTheme.colorScheme
     val colors = NavigationBarItemDefaults.colors(
-        selectedIconColor = scheme.primary,
-        selectedTextColor = scheme.primary,
-        indicatorColor = scheme.primary.copy(alpha = 0.10f),
+        selectedIconColor = XfBlue,
+        selectedTextColor = XfBlue,
+        indicatorColor = XfBlue.copy(alpha = 0.12f),
         unselectedIconColor = scheme.onSurfaceVariant,
         unselectedTextColor = scheme.onSurfaceVariant,
     )
@@ -393,7 +394,7 @@ fun MainQuickActions(
                 iconRes = R.drawable.ic_sort_24dp,
                 busy = false,
                 filled = false,
-                tint = scheme.primary,
+                tint = XfBlue,
                 onClick = onSort,
                 modifier = Modifier.weight(1f),
             )
@@ -423,7 +424,7 @@ private fun QuickActionTile(
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
-    val shape = if (filled) MatixCutShape else MatixButtonShape
+    val shape = RoundedCornerShape(22.dp)
     val source = remember { MutableInteractionSource() }
     val iconColor = if (filled) onMatixButton else tint
     val textColor = if (filled) onMatixButton else scheme.onSurface
@@ -581,16 +582,8 @@ private fun ConnectRing(modifier: Modifier = Modifier) {
             val w = size.width - inset * 2f
             val h = size.height - inset * 2f
             if (w <= 0f || h <= 0f) return@drawBehind
-            // The same outline as the button: two opposite corners cut on the diagonal.
-            val cut = (12.dp.toPx() - inset).coerceAtLeast(0f)
             val outline = Path().apply {
-                moveTo(inset, inset)
-                lineTo(inset + w - cut, inset)
-                lineTo(inset + w, inset + cut)
-                lineTo(inset + w, inset + h)
-                lineTo(inset + cut, inset + h)
-                lineTo(inset, inset + h - cut)
-                close()
+                addRoundRect(RoundRect(Rect(inset, inset, inset + w, inset + h), CornerRadius(h / 2f)))
             }
             drawPath(outline, XfConnected.copy(alpha = 0.25f), style = Stroke(stroke))
             val measure = PathMeasure()

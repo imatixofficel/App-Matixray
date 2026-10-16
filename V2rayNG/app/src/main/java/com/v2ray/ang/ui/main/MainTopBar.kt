@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import com.v2ray.ang.R
 import androidx.compose.foundation.layout.fillMaxHeight
 import com.v2ray.ang.ui.compose.MatixButtonBrush
+import com.v2ray.ang.ui.compose.XfBlue
 import com.v2ray.ang.ui.compose.MatixSmallCutShape
 import com.v2ray.ang.ui.compose.onMatixButton
 import com.v2ray.ang.ui.compose.verticalScrollbar
@@ -190,7 +191,7 @@ private fun HeaderIcon(
             Icon(
                 painter = painterResource(iconRes),
                 contentDescription = stringResource(descriptionRes),
-                tint = MaterialTheme.colorScheme.onSurface,
+                tint = XfBlue,
                 modifier = Modifier.size(22.dp),
             )
         }
@@ -210,7 +211,7 @@ fun MainConfigsToolbar(
     tour: TourState,
 ) {
     val scheme = MaterialTheme.colorScheme
-    val chip = RoundedCornerShape(10.dp)
+    val chip = RoundedCornerShape(50)
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(
             modifier = Modifier
@@ -232,7 +233,7 @@ fun MainConfigsToolbar(
                 Icon(
                     painter = painterResource(R.drawable.ic_sort_24dp),
                     contentDescription = stringResource(R.string.mx_sort_by_ping),
-                    tint = scheme.onSurfaceVariant,
+                    tint = XfBlue,
                     modifier = Modifier.size(18.dp),
                 )
                 Text(
@@ -253,7 +254,7 @@ fun MainConfigsToolbar(
                 Icon(
                     painter = painterResource(R.drawable.ic_search_24dp),
                     contentDescription = stringResource(R.string.acc_search),
-                    tint = scheme.onSurfaceVariant,
+                    tint = XfBlue,
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -263,7 +264,7 @@ fun MainConfigsToolbar(
                     .tourTarget(tour, TourTarget.PingAll)
                     .height(34.dp)
                     .clip(chip)
-                    .background(scheme.onSurface.copy(alpha = 0.07f))
+                    .background(XfBlue.copy(alpha = 0.12f))
                     .clickable(role = Role.Button, onClick = onPingAll)
                     .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -272,7 +273,7 @@ fun MainConfigsToolbar(
                 Icon(
                     painter = painterResource(R.drawable.ic_speed_24dp),
                     contentDescription = null,
-                    tint = scheme.onSurface,
+                    tint = XfBlue,
                     modifier = Modifier.size(18.dp),
                 )
                 Text(

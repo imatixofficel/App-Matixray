@@ -91,7 +91,7 @@ fun ManualConfigDialog(
                 Box(
                     modifier = Modifier
                         .size(38.dp)
-                        .clip(RoundedCornerShape(11.dp))
+                        .clip(androidx.compose.foundation.shape.CircleShape)
                         .background(scheme.onSurface.copy(alpha = 0.07f)),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -168,7 +168,7 @@ fun ManualConfigDialog(
                     maxLines = 2,
                 )
                 Spacer(Modifier.width(8.dp))
-                val chip = RoundedCornerShape(10.dp)
+                val chip = RoundedCornerShape(50)
                 Row(
                     modifier = Modifier
                         .height(34.dp)
@@ -214,7 +214,7 @@ fun ManualConfigDialog(
                     fontWeight = FontWeight.SemiBold,
                     color = scheme.onSurfaceVariant,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(50))
                         .clickable(enabled = !working, role = Role.Button, onClick = onDismiss)
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                 )

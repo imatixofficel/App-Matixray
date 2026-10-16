@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.v2ray.ang.R
 import com.v2ray.ang.extension.toSpeedString
+import com.v2ray.ang.ui.compose.XfBlue
 import com.v2ray.ang.ui.compose.XfConnected
 import com.v2ray.ang.ui.compose.XfGreen
 import com.v2ray.ang.ui.compose.XfPurpleLight
@@ -66,7 +67,7 @@ import java.util.Locale
  * in V2Box. The round connect button is gone from every page; the button of the bar at the bottom connects (the
  * Psiphon page's bar button connects Psiphon). The time is passed in, so it does not restart when the section changes,
  * and it is read through a lambda so only the timer is redrawn each second. [accent] colors the mark and the icons:
- * the theme's ink for the main section, orange for the Psiphon section.
+ * blue for the main section, orange for the Psiphon section.
  */
 @Composable
 fun MainConnectHero(
@@ -76,7 +77,7 @@ fun MainConnectHero(
     speed: TrafficSpeed,
     pingMillis: Long?,
     modifier: Modifier = Modifier,
-    accent: Color = MaterialTheme.colorScheme.primary,
+    accent: Color = XfBlue,
     @Suppress("UNUSED_PARAMETER") accentLight: Color = XfPurpleLight,
     onStatusClick: (() -> Unit)? = null,
     bottomExtra: (@Composable ColumnScope.() -> Unit)? = null,
@@ -193,7 +194,7 @@ private fun StatIcon(iconRes: Int, tint: Color) {
     Box(
         modifier = Modifier
             .size(30.dp)
-            .clip(RoundedCornerShape(9.dp))
+            .clip(CircleShape)
             .background(tint.copy(alpha = 0.12f)),
         contentAlignment = Alignment.Center,
     ) {

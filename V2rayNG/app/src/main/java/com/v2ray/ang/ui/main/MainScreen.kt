@@ -331,7 +331,6 @@ fun MainScreen(
                                     pingMillis = uiState.pingMillis,
                                     onStatusClick = { onAction(MainAction.TestCurrentServer) },
                                     bottomExtra = {
-                                        AutoSwitchRow(checked = autoSwitch, onCheckedChange = { mainViewModel.setAutoSwitch(it) })
                                         SelectedServerCard(name = selectedName, onClick = { bottomTab = MainTab.Configs })
                                     },
                                 )

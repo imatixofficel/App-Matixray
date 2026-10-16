@@ -25,7 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.ui.graphics.Color
-import com.v2ray.ang.ui.compose.XfConnected
+import com.v2ray.ang.ui.compose.XfBlue
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -203,19 +203,18 @@ private fun RowDivider() {
 @Composable
 private fun RowIcon(@DrawableRes iconRes: Int) {
     val scheme = MaterialTheme.colorScheme
-    val shape = RoundedCornerShape(10.dp)
+    val shape = androidx.compose.foundation.shape.CircleShape
     Box(
         modifier = Modifier
             .size(34.dp)
             .clip(shape)
-            .background(scheme.onSurface.copy(alpha = 0.07f))
-            .border(1.dp, scheme.outlineVariant, shape),
+            .background(XfBlue.copy(alpha = 0.12f)),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             painter = painterResource(iconRes),
             contentDescription = null,
-            tint = scheme.onSurface,
+            tint = XfBlue,
             modifier = Modifier.size(19.dp),
         )
     }
@@ -258,7 +257,6 @@ private fun NavRow(item: MainDestination, showNew: Boolean, onClick: () -> Unit)
         )
         if (showNew) SuccessBadge(text = stringResource(R.string.mx_badge_new))
         Spacer(Modifier.weight(1f))
-        Chevron()
     }
 }
 
@@ -316,8 +314,8 @@ private fun SwitchRow(@DrawableRes iconRes: Int, label: String, checked: Boolean
             onCheckedChange = null,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = XfConnected,
-                checkedBorderColor = XfConnected,
+                checkedTrackColor = XfBlue,
+                checkedBorderColor = XfBlue,
             ),
         )
     }
@@ -343,6 +341,5 @@ private fun LinkRow(@DrawableRes iconRes: Int, label: String, onClick: () -> Uni
             modifier = Modifier.weight(1f),
             maxLines = 1,
         )
-        Chevron()
     }
 }

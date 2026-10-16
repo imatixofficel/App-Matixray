@@ -55,8 +55,8 @@ val XfSteel = Color(0xFF8E8E96)
 val XfConnected = Color(0xFF16A34A)
 val XfConnectedLight = Color(0xFF4ADE80)
 /** Old names of the connected color, kept so every file that still uses them follows the new color. */
-val XfBlue = XfConnected
-val XfBlueLight = XfConnectedLight
+val XfBlue = Color(0xFF0B63F6)
+val XfBlueLight = Color(0xFF4C8DFF)
 // Psiphon section: orange, so it reads apart from the main section
 val XfOrange = Color(0xFFFF8A1F)
 val XfOrangeDark = Color(0xFFE5700A)
@@ -187,18 +187,13 @@ val toastIconCircleBg = Color(0x33FFFFFF) // Semi-transparent White
 val toastTextColor = Color.White // White
 
 /**
- * Fill of the main buttons (connect, get configs, add): a vertical metal gradient, graphite on the light theme and
- * silver on the dark one, so the button is always the strongest thing on the page. [onMatixButton] is the text color on it.
+ * Fill of the main buttons (connect, get configs, add): a vertical metal gradient, vivid blue on both themes, so the button is always the strongest thing on the page. [onMatixButton] is the text color on it.
  */
 val MatixButtonBrush: Brush
-    @Composable get() = if (LocalDarkTheme.current) {
-        Brush.verticalGradient(listOf(Color(0xFFFFFFFF), Color(0xFFD4D4DA)))
-    } else {
-        Brush.verticalGradient(listOf(Color(0xFF3A3A3F), Color(0xFF131315)))
-    }
+    @Composable get() = Brush.verticalGradient(listOf(Color(0xFF3B8BFF), Color(0xFF0B57E8)))
 
 val onMatixButton: Color
-    @Composable get() = if (LocalDarkTheme.current) XfInk else Color.White
+    @Composable get() = Color.White
 
 /** Matixray: the app opens in the light (white and violet) look the first time; "1" is light, "2" dark, "0" the system. */
 private const val THEME_DEFAULT = "1"

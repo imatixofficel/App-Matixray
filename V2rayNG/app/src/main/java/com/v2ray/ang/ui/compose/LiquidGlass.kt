@@ -11,7 +11,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.shape.AbsoluteCutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -69,13 +68,12 @@ val GlassCardShape = RoundedCornerShape(14.dp)
 val GlassPillShape = RoundedCornerShape(50)
 
 /**
- * The signature shape of the main buttons: two opposite corners are cut on the diagonal, like the cuts of the M in the
- * logo (top right and bottom left), the other two stay square. Absolute, so it looks the same in Persian and English.
+ * The shape of every button: fully rounded, a capsule. (The names stay from the first cut-corner design.)
  */
-val MatixCutShape = AbsoluteCutCornerShape(topLeft = 0.dp, topRight = 12.dp, bottomRight = 0.dp, bottomLeft = 12.dp)
-val MatixSmallCutShape = AbsoluteCutCornerShape(topLeft = 0.dp, topRight = 8.dp, bottomRight = 0.dp, bottomLeft = 8.dp)
+val MatixCutShape = RoundedCornerShape(50)
+val MatixSmallCutShape = RoundedCornerShape(50)
 /** Shape of the quiet buttons and chips. */
-val MatixButtonShape = RoundedCornerShape(12.dp)
+val MatixButtonShape = RoundedCornerShape(50)
 
 /** Fill of buttons and selected tabs: the solid accent color. */
 val PrimaryGradient: Brush

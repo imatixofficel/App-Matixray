@@ -80,6 +80,8 @@ class SplashActivity : BaseComponentActivity() {
     }
 }
 
+/** A new key, so the opening words ("In the name of God") are shown once to everyone after this update too. */
+private const val SPLASH_SEEN_V2 = "pref_splash_seen_v2"
 private const val FADE_IN_MS = 380
 private const val HOLD_MS = 520L
 private const val FIRST_RUN_HOLD_MS = 1700L
@@ -110,8 +112,7 @@ private fun SplashScreen(onFinished: () -> Unit) {
     val title = remember(persianContext) { persianContext.getString(R.string.xf_splash_title) }
     // The opening words are for the first launch only (an app that was already used before this version has had them).
     val firstRun = remember {
-        !(MmkvManager.decodeSettingsBool(AppConfig.PREF_SPLASH_SEEN, false) ||
-            MmkvManager.decodeSettingsBool(AppConfig.PREF_TUTORIAL_DONE, false))
+        !MmkvManager.decodeSettingsBool(SPLASH_SEEN_V2, false)
     }
     // The words fade in from the first frame, the infinity loop runs under them, and the app opens after about
     // 0.9 s: one fade, a short hold, nothing else to wait for.
@@ -122,7 +123,7 @@ private fun SplashScreen(onFinished: () -> Unit) {
             onFinished()
             return@LaunchedEffect
         }
-        MmkvManager.encodeSettings(AppConfig.PREF_SPLASH_SEEN, true)
+        MmkvManager.encodeSettings(SPLASH_SEEN_V2, true)
         fade.animateTo(1f, tween(durationMillis = FADE_IN_MS, easing = FastOutSlowInEasing))
         kotlinx.coroutines.delay(FIRST_RUN_HOLD_MS)
         onFinished()
