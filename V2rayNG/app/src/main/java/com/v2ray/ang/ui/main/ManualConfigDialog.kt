@@ -62,12 +62,13 @@ private val configLink = Regex("""[A-Za-z][A-Za-z0-9+.\-]{1,15}://\S+""")
 @Composable
 fun ManualConfigDialog(
     onDismiss: () -> Unit,
-    onSubmit: (text: String, done: (added: Int) -> Unit) -> Unit,
+    onSubmit: (text: String, groupName: String, done: (added: Int) -> Unit) -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
     var text by rememberSaveable { mutableStateOf("") }
+    var groupName by rememberSaveable { mutableStateOf("") }
     var failed by remember { mutableStateOf(false) }
     var working by remember { mutableStateOf(false) }
     val found = remember(text) { configLink.findAll(text).count() }
@@ -154,6 +155,33 @@ fun ManualConfigDialog(
             }
             Spacer(Modifier.height(10.dp))
 
+            // Matixray: the configs go to a new group; this is its name (a default one is used when it is left empty).
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(fieldShape)
+                    .background(scheme.surfaceContainerLow)
+                    .border(1.dp, scheme.outlineVariant, fieldShape)
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+            ) {
+                if (groupName.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.mx_import_name_hint),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = scheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    )
+                }
+                BasicTextField(
+                    value = groupName,
+                    onValueChange = { groupName = it },
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = scheme.onSurface),
+                    cursorBrush = SolidColor(scheme.primary),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = when {
@@ -226,7 +254,7 @@ fun ManualConfigDialog(
                         .clickable(enabled = ready, role = Role.Button) {
                             working = true
                             failed = false
-                            onSubmit(text) { added ->
+                            onSubmit(text, groupName) { added ->
                                 working = false
                                 if (added > 0) {
                                     Toast.makeText(

@@ -48,8 +48,11 @@ import com.v2ray.ang.ui.compose.AutoConnectButton
 import com.v2ray.ang.ui.compose.XfOrange
 import com.v2ray.ang.ui.compose.XfOrangeLight
 import com.v2ray.ang.ui.compose.QRCodeDialog
+import com.v2ray.ang.handler.AngConfigManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun MainScreen(
@@ -124,6 +127,47 @@ fun MainScreen(
         mutableStateOf<ServerDeleteTarget?>(null)
     }
 
+    // Matixray: the box for configs added by hand. It hands the pasted text to the importer on a worker thread, into
+    // the group that is open, then tells the list to read the storage again and answers with the number it added.
+    var showManualAdd by remember { mutableStateOf(false) }
+    // Matixray: configs added by hand never go under "Default": they get a new group named by the user; links of
+    // subscriptions keep their own way (a group made from the link).
+    val defaultGroupName = stringResource(R.string.mx_group_mine)
+    val importManual: (String, String, (Int) -> Unit) -> Unit = { text, groupName, done ->
+        val groupId = (uiState.selectedGroupId as Any?)?.toString().orEmpty()
+        scope.launch {
+            var madeGroup = false
+            val added = withContext(Dispatchers.IO) {
+                runCatching {
+                    val onlySubscriptionLinks = text.lines().map { it.trim() }.filter { it.isNotEmpty() }
+                        .let { lines -> lines.isNotEmpty() && lines.all { com.v2ray.ang.util.Utils.isValidSubUrl(it) } }
+                    if (onlySubscriptionLinks) {
+                        val (configs, subscriptions) = AngConfigManager.importBatchConfig(text, groupId, false)
+                        configs + subscriptions
+                    } else {
+                        val newId = com.v2ray.ang.util.Utils.getUuid()
+                        com.v2ray.ang.handler.MmkvManager.encodeSubscription(
+                            newId,
+                            com.v2ray.ang.dto.entities.SubscriptionItem(
+                                remarks = groupName.trim().ifEmpty { defaultGroupName },
+                                autoUpdate = false,
+                            ),
+                        )
+                        val (configs, subscriptions) = AngConfigManager.importBatchConfig(text, newId, true)
+                        if (configs + subscriptions > 0) {
+                            madeGroup = true
+                        } else {
+                            com.v2ray.ang.handler.MmkvManager.removeSubscription(newId)
+                        }
+                        configs + subscriptions
+                    }
+                }.getOrDefault(0)
+            }
+            if (added > 0) onAction(if (madeGroup) MainAction.RefreshGroups else MainAction.Search(searchQuery))
+            done(added)
+        }
+    }
+
     var shareTarget by remember { mutableStateOf<Triple<String, ProfileItem, Boolean>?>(null) }
     val removeServer: (String, String) -> Unit = { guid, profileName ->
         if (confirmRemove) {
@@ -175,6 +219,9 @@ fun MainScreen(
         onConfirmRemove = { guid -> showRemoveConfirm = null; onAction(MainAction.RemoveServer(guid)) }
     )
 
+    if (showManualAdd) {
+        ManualConfigDialog(onDismiss = { showManualAdd = false }, onSubmit = importManual)
+    }
     if (shareTarget != null) {
         val (guid, profile, more) = shareTarget!!
         ShareMethodDialog(
@@ -201,12 +248,17 @@ fun MainScreen(
                         MainQuickActions(
                             fetch = fetchState,
                             testing = uiState.isTesting,
-                            onFetch = { onAction(MainAction.FetchConfigs) },
+                            // Matixray: a new fetch starts clean, the old configs are removed first; a tap while it runs only stops it.
+                            onFetch = {
+                                if (!fetchState.busy) onAction(MainAction.RemoveAllServers)
+                                onAction(MainAction.FetchConfigs)
+                            },
                             onTestAll = {
                                 onAction(if (uiState.isTesting) MainAction.CancelTesting else MainAction.TestRealAllServers)
                             },
                             onSort = { onAction(MainAction.SortByTestResults) },
                             onRemoveDead = { showDelInvalidConfirm = true },
+                            modifier = Modifier.tourTarget(tourState, TourTarget.QuickActions),
                         )
                     }
                     // The one connect button of the app: the same bar on every tab. On the Psiphon page it connects
@@ -217,6 +269,8 @@ fun MainScreen(
                         onToggle = { onAction(if (onPsiphonPage) MainAction.TogglePsiphon else MainAction.ToggleService) },
                         onTest = { onAction(MainAction.TestCurrentServer) },
                         modifier = Modifier.tourTarget(tourState, TourTarget.ConnectionBar),
+                        pingMillis = uiState.pingMillis,
+                        pageKey = onPsiphonPage,
                     )
                     MainBottomBar(selected = bottomTab, onSelect = { bottomTab = it }, tour = tourState)
                 }
@@ -272,7 +326,6 @@ fun MainScreen(
                                     pingMillis = uiState.pingMillis,
                                     onStatusClick = { onAction(MainAction.TestCurrentServer) },
                                     bottomExtra = {
-                                        AutoSwitchRow(checked = autoSwitch, onCheckedChange = { mainViewModel.setAutoSwitch(it) })
                                         SelectedServerCard(name = selectedName, onClick = { bottomTab = MainTab.Configs })
                                     },
                                 )
@@ -283,6 +336,7 @@ fun MainScreen(
                     else -> {
                         MainConfigsHeader(
                             onAction = onAction,
+                            onManualAdd = { showManualAdd = true },
                             onMoreMenuAction = { action ->
                                 when (action) {
                                     MainMoreMenuAction.RestartService -> onAction(MainAction.RestartService)
