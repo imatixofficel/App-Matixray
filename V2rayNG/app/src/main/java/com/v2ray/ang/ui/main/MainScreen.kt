@@ -48,11 +48,8 @@ import com.v2ray.ang.ui.compose.AutoConnectButton
 import com.v2ray.ang.ui.compose.XfOrange
 import com.v2ray.ang.ui.compose.XfOrangeLight
 import com.v2ray.ang.ui.compose.QRCodeDialog
-import com.v2ray.ang.handler.AngConfigManager
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @Composable
 fun MainScreen(
@@ -127,23 +124,6 @@ fun MainScreen(
         mutableStateOf<ServerDeleteTarget?>(null)
     }
 
-    // Matixray: the box for configs added by hand. It hands the pasted text to the importer on a worker thread, into
-    // the group that is open, then tells the list to read the storage again and answers with the number it added.
-    var showManualAdd by remember { mutableStateOf(false) }
-    val importManual: (String, (Int) -> Unit) -> Unit = { text, done ->
-        val groupId = (uiState.selectedGroupId as Any?)?.toString().orEmpty()
-        scope.launch {
-            val added = withContext(Dispatchers.IO) {
-                runCatching {
-                    val (configs, subscriptions) = AngConfigManager.importBatchConfig(text, groupId, false)
-                    configs + subscriptions
-                }.getOrDefault(0)
-            }
-            if (added > 0) onAction(MainAction.Search(searchQuery))
-            done(added)
-        }
-    }
-
     var shareTarget by remember { mutableStateOf<Triple<String, ProfileItem, Boolean>?>(null) }
     val removeServer: (String, String) -> Unit = { guid, profileName ->
         if (confirmRemove) {
@@ -151,42 +131,6 @@ fun MainScreen(
         } else {
             onAction(MainAction.RemoveServer(guid))
         }
-    }
-
-    val pagerState = rememberPagerState(
-        initialPage = 0,
-        pageCount = { groups.size.coerceAtLeast(1) }
-    )
-
-    val lazyListStates = remember { mutableStateMapOf<String, LazyListState>() }
-    val lazyGridStates = remember { mutableStateMapOf<String, LazyGridState>() }
-
-    LaunchedEffect(groups) {
-        val validGroupIds = groups.map { it.id }.toSet()
-        lazyListStates.keys.retainAll(validGroupIds)
-        lazyGridStates.keys.retainAll(validGroupIds)
-    }
-
-    LaunchedEffect(groups, uiState.selectedGroupId) {
-        if (groups.isEmpty()) return@LaunchedEffect
-        val selectedIndex = groups.indexOfFirst { it.id == uiState.selectedGroupId }
-            .takeIf { it >= 0 } ?: 0
-        if (!pagerState.isScrollInProgress && pagerState.settledPage != selectedIndex) {
-            pagerState.scrollToPage(selectedIndex)
-        }
-    }
-
-    val latestGroups by rememberUpdatedState(groups)
-
-    LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.settledPage }
-            .distinctUntilChanged()
-            .collect { page ->
-                val currentGroups = latestGroups
-                if (page in currentGroups.indices) {
-                    onAction(MainAction.SelectGroup(currentGroups[page].id))
-                }
-            }
     }
 
     uiState.updateNotice?.let { notice ->
@@ -209,6 +153,13 @@ fun MainScreen(
         )
     }
 
+    uiState.pendingImport?.let {
+        ImportNameDialog(
+            onConfirm = { name -> onAction(MainAction.ImportBatchConfig(it, name)) },
+            onDismiss = { onAction(MainAction.DismissImportNaming) },
+        )
+    }
+
     MainDialogs(
         showDelAllConfirm = showDelAllConfirm,
         onDismissDelAll = { showDelAllConfirm = false },
@@ -224,9 +175,6 @@ fun MainScreen(
         onConfirmRemove = { guid -> showRemoveConfirm = null; onAction(MainAction.RemoveServer(guid)) }
     )
 
-    if (showManualAdd) {
-        ManualConfigDialog(onDismiss = { showManualAdd = false }, onSubmit = importManual)
-    }
     if (shareTarget != null) {
         val (guid, profile, more) = shareTarget!!
         ShareMethodDialog(
@@ -253,17 +201,12 @@ fun MainScreen(
                         MainQuickActions(
                             fetch = fetchState,
                             testing = uiState.isTesting,
-                            // Matixray: a new fetch starts clean, the old configs are removed first; a tap while it runs only stops it.
-                            onFetch = {
-                                if (!fetchState.busy) onAction(MainAction.RemoveAllServers)
-                                onAction(MainAction.FetchConfigs)
-                            },
+                            onFetch = { onAction(MainAction.FetchConfigs) },
                             onTestAll = {
                                 onAction(if (uiState.isTesting) MainAction.CancelTesting else MainAction.TestRealAllServers)
                             },
                             onSort = { onAction(MainAction.SortByTestResults) },
                             onRemoveDead = { showDelInvalidConfirm = true },
-                            modifier = Modifier.tourTarget(tourState, TourTarget.QuickActions),
                         )
                     }
                     // The one connect button of the app: the same bar on every tab. On the Psiphon page it connects
@@ -274,8 +217,6 @@ fun MainScreen(
                         onToggle = { onAction(if (onPsiphonPage) MainAction.TogglePsiphon else MainAction.ToggleService) },
                         onTest = { onAction(MainAction.TestCurrentServer) },
                         modifier = Modifier.tourTarget(tourState, TourTarget.ConnectionBar),
-                        pingMillis = uiState.pingMillis,
-                        pageKey = onPsiphonPage,
                     )
                     MainBottomBar(selected = bottomTab, onSelect = { bottomTab = it }, tour = tourState)
                 }
@@ -331,6 +272,7 @@ fun MainScreen(
                                     pingMillis = uiState.pingMillis,
                                     onStatusClick = { onAction(MainAction.TestCurrentServer) },
                                     bottomExtra = {
+                                        AutoSwitchRow(checked = autoSwitch, onCheckedChange = { mainViewModel.setAutoSwitch(it) })
                                         SelectedServerCard(name = selectedName, onClick = { bottomTab = MainTab.Configs })
                                     },
                                 )
@@ -341,7 +283,6 @@ fun MainScreen(
                     else -> {
                         MainConfigsHeader(
                             onAction = onAction,
-                            onManualAdd = { showManualAdd = true },
                             onMoreMenuAction = { action ->
                                 when (action) {
                                     MainMoreMenuAction.RestartService -> onAction(MainAction.RestartService)
@@ -389,69 +330,23 @@ fun MainScreen(
                                 trackColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                             )
                         }
-                        val shownGroup = groups.getOrNull(pagerState.currentPage.coerceIn(0, groups.lastIndex))
-                        if (shownGroup != null) {
-                            val shownFlow = remember(shownGroup.id, mainViewModel) {
-                                mainViewModel.serversForGroup(shownGroup.id)
-                            }
-                            GroupInfoCard(
-                                group = shownGroup,
-                                serverFlow = shownFlow,
-                                selectedName = selectedName,
-                                onPing = { onAction(MainAction.TestRealAllServers) },
-                            )
-                        }
-                        if (groups.size > 1) {
-                            GroupTabBar(
-                                groups = groups,
-                                selectedTabIndex = pagerState.currentPage.coerceIn(0, groups.lastIndex),
-                                mainViewModel = mainViewModel,
-                                onTabClick = { targetIndex ->
-                                    scope.launch {
-                                        pagerState.navigateToPageOptimized(
-                                            targetPage = targetIndex,
-                                            animateAdjacentPage = true
-                                        )
-                                    }
-                                }
-                            )
-                        }
-
-                        HorizontalPager(
-                            state = pagerState,
-                            modifier = Modifier.fillMaxSize(),
-                            userScrollEnabled = true,
-                            beyondViewportPageCount = 1,
-                            key = { page -> groups.getOrNull(page)?.id ?: "group-page-$page" }
-                        ) { page ->
-                            val group = groups.getOrNull(page) ?: return@HorizontalPager
-
-                            GroupPagerPage(
-                                groupId = group.id,
-                                mainViewModel = mainViewModel,
-                                selectedGuid = selectedGuid,
-                                locateTarget = uiState.locateTarget,
-                                doubleColumnDisplay = doubleColumnDisplay,
-                                searchQuery = searchQuery,
-                                lazyListStates = lazyListStates,
-                                lazyGridStates = lazyGridStates,
-                                onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
-                                onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
-                                onShareServer = { guid, profile ->
-                                    shareTarget = Triple(guid, profile, false)
-                                },
-                                onMoreServer = { guid, profile ->
-                                    shareTarget = Triple(guid, profile, true)
-                                },
-                                onRemoveServer = removeServer,
-                                contentPadding = PaddingValues(
-                                    start = 0.dp,
-                                    top = 2.dp,
-                                    end = 0.dp,
-                                    bottom = 16.dp
-                                )
-                            )
-                        }
+                        GroupedConfigsList(
+                            groups = groups,
+                            mainViewModel = mainViewModel,
+                            selectedGuid = selectedGuid,
+                            selectedGroupId = uiState.selectedGroupId,
+                            locateTarget = uiState.locateTarget,
+                            searchQuery = searchQuery,
+                            fetchBusy = fetchState.busy,
+                            onSelectGroup = { id -> onAction(MainAction.SelectGroup(id)) },
+                            onRefreshGroup = { id -> onAction(MainAction.RefreshGroup(id)) },
+                            onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
+                            onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
+                            onShareServer = { guid, profile -> shareTarget = Triple(guid, profile, false) },
+                            onMoreServer = { guid, profile -> shareTarget = Triple(guid, profile, true) },
+                            onLocateHandled = { onAction(MainAction.LocateHandled) },
+                            contentPadding = PaddingValues(start = 0.dp, top = 2.dp, end = 0.dp, bottom = 16.dp),
+                        )
                     }
                 }
             }

@@ -209,6 +209,30 @@ class MainRepository(
 
     override fun getSubsList(): List<String> = MmkvManager.decodeSubsList()
 
+    override fun createLocalGroup(name: String): String {
+        val id = Utils.getUuid()
+        MmkvManager.encodeSubscription(id, SubscriptionItem(remarks = name, autoUpdate = false))
+        return id
+    }
+
+    override fun ensureFreeGroup(name: String): String {
+        val id = AppConfig.FREE_SUBSCRIPTION_ID
+        if (MmkvManager.decodeSubscription(id) == null) {
+            MmkvManager.encodeSubscription(id, SubscriptionItem(remarks = name, autoUpdate = false))
+        }
+        return id
+    }
+
+    override fun clearGroup(groupId: String) {
+        val guids = MmkvManager.decodeServerList(groupId).toList()
+        MmkvManager.removeServers(guids, groupId)
+    }
+
+    override fun removeGroup(groupId: String) {
+        if (groupId == AppConfig.DEFAULT_SUBSCRIPTION_ID) return
+        MmkvManager.removeSubscription(groupId)
+    }
+
     override suspend fun importBatchConfig(
         server: String?,
         subscriptionId: String,

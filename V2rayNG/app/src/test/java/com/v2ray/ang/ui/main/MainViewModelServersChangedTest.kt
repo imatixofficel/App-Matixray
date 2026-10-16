@@ -70,6 +70,10 @@ class MainViewModelServersChangedTest {
         override fun clearAllTestDelayResults(guids: List<String>) = Unit
         override fun sortByTestResultsForSub(subId: String) = Unit
         override fun getSubsList() = listOf(SUB)
+        override fun createLocalGroup(name: String) = "local"
+        override fun ensureFreeGroup(name: String) = "free"
+        override fun clearGroup(groupId: String) = Unit
+        override fun removeGroup(groupId: String) = Unit
         override suspend fun importBatchConfig(server: String?, subscriptionId: String, updateUI: Boolean) = 0 to 0
         override fun updateConfigViaSubAll() = SubscriptionUpdateResult()
         override fun updateConfigViaSub(subscriptionCache: SubscriptionCache) = SubscriptionUpdateResult()

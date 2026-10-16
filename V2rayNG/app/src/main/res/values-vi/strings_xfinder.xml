@@ -64,4 +64,12 @@
     <string name="mx_auto_switch_title">Tự động kết nối máy chủ tốt nhất</string>
     <string name="mx_auto_switch_hint">Nếu máy chủ bị ngắt, kết nối đến máy chủ tốt nhất</string>
     <string name="mx_badge_new">Mới</string>
+    <string name="mx_group_free">Miễn phí</string>
+    <string name="mx_group_mine">Cấu hình của tôi</string>
+    <string name="mx_group_expanded">Đang mở</string>
+    <string name="mx_group_collapsed">Đang đóng</string>
+    <string name="mx_group_refresh">Cập nhật %1$s</string>
+    <string name="mx_import_name_title">Tên nhóm mới</string>
+    <string name="mx_import_name_hint">Tên nhóm</string>
+    <string name="mx_import_name_ok">Thêm</string>
 </resources>

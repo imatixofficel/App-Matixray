@@ -64,4 +64,12 @@
     <string name="mx_auto_switch_title">اتصال خودکار به بهترین سرور</string>
     <string name="mx_auto_switch_hint">اگر سرور قطع شد، به بهترین سرور وصل می‌شود</string>
     <string name="mx_badge_new">جدید</string>
+    <string name="mx_group_free">رایگون</string>
+    <string name="mx_group_mine">کانفیگای مه</string>
+    <string name="mx_group_expanded">وا</string>
+    <string name="mx_group_collapsed">بسته</string>
+    <string name="mx_group_refresh">نو کردن %1$s</string>
+    <string name="mx_import_name_title">نوم گروه تازه</string>
+    <string name="mx_import_name_hint">نوم گروه</string>
+    <string name="mx_import_name_ok">ایزونی</string>
 </resources>

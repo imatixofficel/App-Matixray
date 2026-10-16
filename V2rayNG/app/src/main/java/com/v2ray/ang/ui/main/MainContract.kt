@@ -38,7 +38,9 @@ data class MainUiState(
     /** Matixray: delay in ms of the last successful connection test of the running tunnel, shown under the connect button. */
     val pingMillis: Long? = null,
     /** Matixray: a newer release found on start, to be announced once; null when none or after it was dismissed. */
-    val updateNotice: com.v2ray.ang.dto.CheckUpdateResult? = null
+    val updateNotice: com.v2ray.ang.dto.CheckUpdateResult? = null,
+    /** Matixray: configs the user added that wait for the name of the group they go to; null when none. */
+    val pendingImport: String? = null,
 )
 
 /** Matixray: where the "get configs" button is. */
@@ -114,7 +116,17 @@ sealed interface MainAction {
     /** Matixray: the notice of a newer release, see [MainUiState.updateNotice], was dismissed. */
     data object DismissUpdateNotice : MainAction
 
-    data class ImportBatchConfig(val configText: String) : MainAction
+    /**
+     * Matixray: adds configs. Links of a subscription keep their own group; every other config goes to a new group
+     * named [groupName]; while it is null the user is asked for the name first, see [MainUiState.pendingImport].
+     */
+    data class ImportBatchConfig(val configText: String, val groupName: String? = null) : MainAction
+
+    /** Matixray: the user left the naming of an import, see [MainUiState.pendingImport]. */
+    data object DismissImportNaming : MainAction
+
+    /** Matixray: brings one group up to date: a subscription is downloaded again, the free group is fetched anew, any other group is pinged. */
+    data class RefreshGroup(val groupId: String) : MainAction
 
     data object LocateHandled : MainAction
 

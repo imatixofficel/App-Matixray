@@ -64,4 +64,12 @@
     <string name="mx_auto_switch_title">সেরা সার্ভারে স্বয়ংক্রিয় সংযোগ</string>
     <string name="mx_auto_switch_hint">সার্ভার বিচ্ছিন্ন হলে সেরা সার্ভারে সংযুক্ত হবে</string>
     <string name="mx_badge_new">নতুন</string>
+    <string name="mx_group_free">বিনামূল্যে</string>
+    <string name="mx_group_mine">আমার কনফিগ</string>
+    <string name="mx_group_expanded">খোলা</string>
+    <string name="mx_group_collapsed">বন্ধ</string>
+    <string name="mx_group_refresh">%1$s আপডেট করুন</string>
+    <string name="mx_import_name_title">নতুন গ্রুপের নাম</string>
+    <string name="mx_import_name_hint">গ্রুপের নাম</string>
+    <string name="mx_import_name_ok">যোগ করুন</string>
 </resources>

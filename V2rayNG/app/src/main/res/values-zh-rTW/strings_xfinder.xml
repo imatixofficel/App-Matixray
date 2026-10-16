@@ -64,4 +64,12 @@
     <string name="mx_auto_switch_title">自動連線最佳伺服器</string>
     <string name="mx_auto_switch_hint">伺服器中斷時，自動連線到最佳伺服器</string>
     <string name="mx_badge_new">新</string>
+    <string name="mx_group_free">免費</string>
+    <string name="mx_group_mine">我的設定</string>
+    <string name="mx_group_expanded">已展開</string>
+    <string name="mx_group_collapsed">已收合</string>
+    <string name="mx_group_refresh">更新 %1$s</string>
+    <string name="mx_import_name_title">新群組名稱</string>
+    <string name="mx_import_name_hint">群組名稱</string>
+    <string name="mx_import_name_ok">新增</string>
 </resources>

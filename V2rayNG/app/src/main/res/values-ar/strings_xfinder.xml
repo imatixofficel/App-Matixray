@@ -64,4 +64,12 @@
     <string name="mx_auto_switch_title">اتصال تلقائي بأفضل خادم</string>
     <string name="mx_auto_switch_hint">إذا انقطع الخادم، يتم الاتصال بأفضل خادم</string>
     <string name="mx_badge_new">جديد</string>
+    <string name="mx_group_free">مجاني</string>
+    <string name="mx_group_mine">إعداداتي</string>
+    <string name="mx_group_expanded">مفتوحة</string>
+    <string name="mx_group_collapsed">مغلقة</string>
+    <string name="mx_group_refresh">تحديث %1$s</string>
+    <string name="mx_import_name_title">اسم المجموعة الجديدة</string>
+    <string name="mx_import_name_hint">اسم المجموعة</string>
+    <string name="mx_import_name_ok">إضافة</string>
 </resources>

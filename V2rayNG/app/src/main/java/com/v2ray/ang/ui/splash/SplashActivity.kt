@@ -1,9 +1,17 @@
 package com.v2ray.ang.ui.splash
 
 import android.content.Intent
-import com.v2ray.ang.AppConfig
-import com.v2ray.ang.handler.MmkvManager
-import com.v2ray.ang.ui.compose.BouncingBallsLoader
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.Stroke
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import com.v2ray.ang.ui.compose.BouncingDots
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.size
@@ -15,11 +23,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.res.painterResource
-import com.v2ray.ang.ui.compose.LocalDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -61,10 +65,7 @@ import com.v2ray.ang.ui.compose.liquidGlass
 import com.v2ray.ang.ui.main.MainActivity
 import java.util.Locale
 
-/**
- * Launcher entry: the bouncing balls, with the opening words (always in Persian) above them the first time only,
- * then it hands over to [MainActivity]. The first time stays long enough for the balls to be seen bouncing.
- */
+/** Launcher entry: the opening words (always in Persian) fade in over the bouncing dots, in under a second, then hands over to [MainActivity]. */
 class SplashActivity : BaseComponentActivity() {
 
     @Composable
@@ -80,11 +81,9 @@ class SplashActivity : BaseComponentActivity() {
     }
 }
 
-/** A new key, so the opening words ("In the name of God") are shown once to everyone after this update too. */
-private const val SPLASH_SEEN_V2 = "pref_splash_seen_v2"
-private const val FADE_IN_MS = 380
-private const val HOLD_MS = 520L
-private const val FIRST_RUN_HOLD_MS = 1700L
+private const val FADE_IN_MS = 700
+private const val LOAD_MS = 2300
+private const val HOLD_MS = 350L
 private val splashStatusRes = intArrayOf(
     R.string.xf_splash_status_0,
     R.string.xf_splash_status_1,
@@ -110,33 +109,64 @@ private fun SplashScreen(onFinished: () -> Unit) {
         base.createConfigurationContext(config)
     }
     val title = remember(persianContext) { persianContext.getString(R.string.xf_splash_title) }
-    // The opening words are for the first launch only (an app that was already used before this version has had them).
-    val firstRun = remember {
-        !MmkvManager.decodeSettingsBool(SPLASH_SEEN_V2, false)
-    }
-    // The words fade in from the first frame, the infinity loop runs under them, and the app opens after about
-    // 0.9 s: one fade, a short hold, nothing else to wait for.
+    // The words rise and fade in with a glow behind them, a thin line fills while the status words change, then the
+    // app opens: about 2.7 s in all.
     val fade = remember { Animatable(0f) }
+    val progress = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
-        // The loading screen is for the very first launch only; every later start goes straight to the app.
-        if (!firstRun) {
-            onFinished()
-            return@LaunchedEffect
+        coroutineScope {
+            launch { fade.animateTo(1f, tween(durationMillis = FADE_IN_MS, easing = FastOutSlowInEasing)) }
+            progress.animateTo(1f, tween(durationMillis = LOAD_MS, easing = LinearEasing))
         }
-        MmkvManager.encodeSettings(SPLASH_SEEN_V2, true)
-        fade.animateTo(1f, tween(durationMillis = FADE_IN_MS, easing = FastOutSlowInEasing))
-        kotlinx.coroutines.delay(FIRST_RUN_HOLD_MS)
+        kotlinx.coroutines.delay(HOLD_MS)
         onFinished()
     }
+    val percent = (progress.value * 100).toInt()
 
-    if (!firstRun) return
+    val transition = rememberInfiniteTransition(label = "splash")
+    val breathe by transition.animateFloat(
+        initialValue = 0.9f,
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "breathe",
+    )
+    val ring by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(2400, easing = LinearEasing)),
+        label = "ring",
+    )
+    val glowColor = scheme.primary
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .navigationBarsPadding()
-            .graphicsLayer { this.alpha = fade.value },
+            .navigationBarsPadding(),
     ) {
+        // Halo and two rings spreading out behind the words.
+        Canvas(modifier = Modifier.fillMaxSize().graphicsLayer { this.alpha = fade.value }) {
+            val c = center.copy(y = size.height * 0.45f)
+            val base = size.minDimension * 0.32f
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(glowColor.copy(alpha = 0.30f), Color.Transparent),
+                    center = c,
+                    radius = base * 1.5f * breathe,
+                ),
+                radius = base * 1.5f * breathe,
+                center = c,
+            )
+            for (i in 0..1) {
+                val t = (ring + i * 0.5f) % 1f
+                drawCircle(
+                    color = glowColor.copy(alpha = (1f - t) * 0.35f),
+                    radius = base * (0.6f + 1.1f * t),
+                    center = c,
+                    style = Stroke(width = 2.dp.toPx()),
+                )
+            }
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -144,30 +174,50 @@ private fun SplashScreen(onFinished: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            // The mark of the app. It is black with a soft edge, so the dark theme draws it in white.
-            Image(
-                painter = painterResource(R.drawable.xf_logo),
-                contentDescription = null,
-                colorFilter = if (LocalDarkTheme.current) ColorFilter.tint(Color.White) else null,
-                modifier = Modifier.size(168.dp),
+            Text(
+                text = title,
+                color = scheme.onBackground,
+                style = MaterialTheme.typography.displayMedium.copy(fontSize = 44.sp, fontWeight = FontWeight.ExtraBold),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.graphicsLayer {
+                    this.alpha = fade.value
+                    val scale = 0.82f + 0.18f * fade.value
+                    scaleX = scale
+                    scaleY = scale
+                    translationY = (1f - fade.value) * 24.dp.toPx()
+                },
             )
-            Spacer(Modifier.height(if (firstRun) 20.dp else 28.dp))
-            if (firstRun) {
-                Text(
-                    text = title,
-                    color = scheme.onBackground,
-                    style = MaterialTheme.typography.displayMedium.copy(fontSize = 38.sp, fontWeight = FontWeight.Bold),
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(32.dp))
-            }
-            BouncingBallsLoader()
+            Spacer(Modifier.height(36.dp))
+            BouncingDots(
+                color = scheme.primary,
+                dotSize = 14.dp,
+                modifier = Modifier.graphicsLayer { this.alpha = fade.value },
+            )
+            Spacer(Modifier.height(28.dp))
+            LinearProgressIndicator(
+                progress = { progress.value },
+                modifier = Modifier
+                    .fillMaxWidth(0.55f)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(50)),
+                color = scheme.primary,
+                trackColor = scheme.primary.copy(alpha = 0.16f),
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = stringResource(splashStatusRes[splashStatusIndex(percent)]),
+                color = scheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.graphicsLayer { this.alpha = fade.value },
+            )
         }
         Text(
             text = stringResource(R.string.xf_brand),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 28.dp),
+                .padding(bottom = 28.dp)
+                .graphicsLayer { this.alpha = fade.value },
             color = scheme.onSurfaceVariant,
             style = MaterialTheme.typography.labelLarge,
             letterSpacing = 0.2.em,

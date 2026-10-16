@@ -64,4 +64,12 @@
     <string name="mx_auto_switch_title">Автоподключение к лучшему серверу</string>
     <string name="mx_auto_switch_hint">Если сервер отключится, подключиться к лучшему серверу</string>
     <string name="mx_badge_new">Новое</string>
+    <string name="mx_group_free">Бесплатные</string>
+    <string name="mx_group_mine">Мои конфиги</string>
+    <string name="mx_group_expanded">Открыта</string>
+    <string name="mx_group_collapsed">Закрыта</string>
+    <string name="mx_group_refresh">Обновить %1$s</string>
+    <string name="mx_import_name_title">Название новой группы</string>
+    <string name="mx_import_name_hint">Название группы</string>
+    <string name="mx_import_name_ok">Добавить</string>
 </resources>

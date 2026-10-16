@@ -22,6 +22,7 @@ import com.v2ray.ang.extension.matchesPattern
 import com.v2ray.ang.extension.moveItem
 import com.v2ray.ang.ui.base.BaseViewModel
 import com.v2ray.ang.util.LogUtil
+import com.v2ray.ang.util.Utils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
@@ -554,7 +555,9 @@ class MainViewModel(
             is MainAction.RemoveServer -> removeServerAndRefresh(action.guid)
             is MainAction.MoveServer -> moveServer(action.groupId, action.fromGuid, action.toGuid)
             is MainAction.Search -> filterConfig(action.query)
-            is MainAction.ImportBatchConfig -> importBatchConfig(action.configText)
+            is MainAction.ImportBatchConfig -> importBatchConfig(action.configText, action.groupName)
+            MainAction.DismissImportNaming -> _uiState.update { it.copy(pendingImport = null) }
+            is MainAction.RefreshGroup -> refreshGroup(action.groupId)
             MainAction.LocateHandled -> consumeLocateTarget()
             is MainAction.MoveRefusalShown -> _uiState.update {
                 if (it.moveRefusal == action.refusal) it.copy(moveRefusal = null) else it
@@ -849,29 +852,89 @@ class MainViewModel(
     }
 
     // ---------- Business actions (coroutine-based) ----------
-    private fun importBatchConfig(configText: String) {
+    private fun importBatchConfig(configText: String, groupName: String?) {
+        // Matixray: configs the user adds never go under "Default": they get a group of their own, named by the user.
+        // Only links of subscriptions keep the way they had (a group made from the link itself).
+        val onlySubscriptionLinks = configText.lines().map { it.trim() }.filter { it.isNotEmpty() }
+            .let { lines -> lines.isNotEmpty() && lines.all { Utils.isValidSubUrl(it) } }
+        if (groupName == null && !onlySubscriptionLinks) {
+            _uiState.update { it.copy(pendingImport = configText) }
+            return
+        }
+        _uiState.update { it.copy(pendingImport = null) }
         launchLoading {
             withContext(ioDispatcher) {
+                var madeGroup: String? = null
                 try {
-                    val (count, countSub) = dataSource.importBatchConfig(
-                        configText, uiState.value.selectedGroupId, true
-                    )
+                    val target = if (groupName != null && !onlySubscriptionLinks) {
+                        dataSource.createLocalGroup(
+                            groupName.trim().ifEmpty { dataSource.getString(R.string.mx_group_mine) }
+                        ).also { madeGroup = it }
+                    } else {
+                        uiState.value.selectedGroupId
+                    }
+                    val (count, countSub) = dataSource.importBatchConfig(configText, target, true)
                     when {
                         count > 0 -> {
                             toast(dataSource.getString(R.string.title_import_config_count, count))
+                            if (madeGroup != null) {
+                                dataSource.setSelectedSubscriptionId(target)
+                                _uiState.update { it.copy(selectedGroupId = target) }
+                            }
                             setupGroupTab(forceRefresh = true)
                         }
 
                         countSub > 0 -> setupGroupTab(forceRefresh = true)
-                        else -> toastError(R.string.toast_failure)
+                        else -> {
+                            madeGroup?.let { dataSource.removeGroup(it) }
+                            toastError(R.string.toast_failure)
+                        }
                     }
                 } catch (cancelled: CancellationException) {
+                    madeGroup?.let { dataSource.removeGroup(it) }
                     throw cancelled
                 } catch (e: Exception) {
+                    madeGroup?.let { dataSource.removeGroup(it) }
                     LogUtil.e(AppConfig.TAG, "Failed to import batch config", e)
                     toastError(R.string.toast_failure)
                 }
             }
+        }
+    }
+
+    /**
+     * Matixray: the refresh button of a group card. A group with a link is downloaded again, the free group is fetched
+     * anew (and nothing else is touched), any other group gets its real ping tested.
+     */
+    private fun refreshGroup(groupId: String) {
+        if (groupId.isEmpty()) return
+        if (groupId == AppConfig.FREE_SUBSCRIPTION_ID) {
+            if (!_fetchState.value.busy) fetchConfigs()
+            return
+        }
+        val item = dataSource.getSubscriptionItem(groupId) ?: return
+        if (item.url.isNotEmpty()) {
+            launchLoading {
+                withContext(ioDispatcher) {
+                    try {
+                        val result = dataSource.updateConfigViaSub(SubscriptionCache(groupId, item))
+                        if (result.successCount > 0) {
+                            toast(getQuantityString(R.plurals.title_update_config_count, result.configCount, result.configCount))
+                            setupGroupTab(forceRefresh = true)
+                        } else {
+                            toastError(R.string.toast_failure)
+                        }
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (e: Exception) {
+                        LogUtil.e(AppConfig.TAG, "Group refresh failed", e)
+                        toastError(R.string.toast_failure)
+                    }
+                }
+            }
+        } else {
+            subscriptionIdChanged(groupId)
+            testAllRealPing()
         }
     }
 
@@ -939,11 +1002,19 @@ class MainViewModel(
         _fetchState.value = ConfigFetchState(FetchPhase.Downloading, sourcesTotal = sources.size)
         fetchJob = viewModelScope.launch(ioDispatcher) {
             try {
-                val seen = HashSet<ProfileItem>()
-                dataSource.getServerGuidList("").forEach { guid ->
-                    val profile = dataSource.decodeServerConfig(guid) ?: return@forEach
-                    if (!profile.configType.isComplexType()) seen += profile.duplicateIdentity()
+                // Matixray: the fetched configs live in the free group, and only that group is cleared (when the first
+                // source answers, so a failed download keeps the old ones); the user's own groups are never touched.
+                val freeId = dataSource.ensureFreeGroup(dataSource.getString(R.string.mx_group_free))
+                var freeCleared = false
+                var seen = HashSet<ProfileItem>()
+                fun collectSeen() {
+                    seen = HashSet()
+                    dataSource.getServerGuidList("").forEach { guid ->
+                        val profile = dataSource.decodeServerConfig(guid) ?: return@forEach
+                        if (!profile.configType.isComplexType()) seen += profile.duplicateIdentity()
+                    }
                 }
+                collectSeen()
                 val importLock = Mutex()
                 var added = 0
                 var done = 0
@@ -953,11 +1024,16 @@ class MainViewModel(
                     importLock.withLock {
                         done++
                         if (result.links.isNotEmpty()) reachable++
+                        if (!freeCleared && result.links.isNotEmpty()) {
+                            freeCleared = true
+                            dataSource.clearGroup(freeId)
+                            collectSeen()
+                        }
                         var fromSource = 0
                         for (link in result.links) {
                             if (added >= MAX_FETCH_TOTAL || fromSource >= MAX_FETCH_PER_SOURCE) break
                             currentCoroutineContext().ensureActive()
-                            if (!importFetchedLink(link, seen)) continue
+                            if (!importFetchedLink(link, seen, freeId)) continue
                             added++
                             fromSource++
                             _fetchState.value = ConfigFetchState(FetchPhase.Downloading, done, sources.size, added)
@@ -999,20 +1075,20 @@ class MainViewModel(
     }
 
     /**
-     * Adds one share link as a profile of the default group; false when the app could not read it or already holds
+     * Adds one share link as a profile of the group [groupId] (the free group); false when the app could not read it or already holds
      * the same profile (the copy just made is removed again).
      */
-    private suspend fun importFetchedLink(link: String, seen: MutableSet<ProfileItem>): Boolean {
-        val before = dataSource.getServerGuidList("").toHashSet()
+    private suspend fun importFetchedLink(link: String, seen: MutableSet<ProfileItem>, groupId: String): Boolean {
+        val before = dataSource.getServerGuidList(groupId).toHashSet()
         val count = try {
-            dataSource.importBatchConfig(link, "", true).first
+            dataSource.importBatchConfig(link, groupId, true).first
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (e: Exception) {
             0
         }
         if (count <= 0) return false
-        val created = dataSource.getServerGuidList("").firstOrNull { it !in before } ?: return false
+        val created = dataSource.getServerGuidList(groupId).firstOrNull { it !in before } ?: return false
         val profile = dataSource.decodeServerConfig(created)
         if (profile != null && !profile.configType.isComplexType() && !seen.add(profile.duplicateIdentity())) {
             dataSource.removeServer(created)
@@ -1024,7 +1100,7 @@ class MainViewModel(
     /** Shows the group the fetched configs went to (the default group, or "All" when the app shows that one). */
     private fun showFetchedGroup() {
         val ids = _uiState.value.groups.map { it.id }.toSet()
-        val target = listOf(AppConfig.DEFAULT_SUBSCRIPTION_ID, "").firstOrNull { it in ids } ?: return
+        val target = listOf(AppConfig.FREE_SUBSCRIPTION_ID, AppConfig.DEFAULT_SUBSCRIPTION_ID, "").firstOrNull { it in ids } ?: return
         subscriptionIdChanged(target)
     }
 

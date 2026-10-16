@@ -1,5 +1,7 @@
 package com.v2ray.ang.ui.main
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,6 +20,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -27,6 +31,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,12 +39,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Constraints
@@ -56,7 +70,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
+import com.v2ray.ang.dto.GroupMapItem
 import com.v2ray.ang.dto.LocateTarget
 import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.ui.compose.ReorderableGridItem
@@ -324,10 +340,11 @@ private val pingMidText = Color(0xFFB7791F)
 
 /** The round-cornered ping mark of a config card: green with the delay, red "Timeout" when the test failed. */
 @Composable
-private fun PingPill(delayMillis: Long) {
+private fun PingPill(delayMillis: Long, onBlue: Boolean = false) {
     if (delayMillis == 0L) return
     val failed = delayMillis < 0L
     val color = when {
+        onBlue -> Color.White
         failed -> colorPingRed
         delayMillis > 800L -> pingMidText
         else -> pingGoodText
@@ -340,7 +357,7 @@ private fun PingPill(delayMillis: Long) {
         maxLines = 1,
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(color.copy(alpha = 0.14f))
+            .background(color.copy(alpha = if (onBlue) 0.22f else 0.14f))
             .padding(horizontal = 8.dp, vertical = 2.dp),
     )
 }
@@ -365,18 +382,18 @@ private fun ServerListItem(
     }
     val shape = RoundedCornerShape(16.dp)
     val protocol = row.profile.configType.name
+    // Matixray: the selected config is blue behind, white on top, as in V2Box.
+    val mainColor = if (isSelected) Color.White else scheme.onSurface
+    val subColor = if (isSelected) Color.White.copy(alpha = 0.82f) else scheme.onSurfaceVariant
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(
             modifier = Modifier
                 .padding(horizontal = 14.dp, vertical = 4.dp)
                 .fillMaxWidth()
                 .height(72.dp)
-                .liquidGlass(
-                    shape,
-                    tint = if (isSelected) scheme.primary.copy(alpha = 0.07f) else Color.Unspecified
-                )
                 .then(
-                    if (isSelected) Modifier.border(1.5.dp, scheme.primary, shape) else Modifier
+                    if (isSelected) Modifier.clip(shape).background(Brush.horizontalGradient(listOf(ConfigBlue, ConfigBlueDark)))
+                    else Modifier.liquidGlass(shape)
                 )
                 .semantics {
                     if (selectedStateDescription != null) {
@@ -391,7 +408,7 @@ private fun ServerListItem(
                 modifier = Modifier
                     .width(30.dp)
                     .fillMaxHeight()
-                    .background(if (isSelected) XfMint.copy(alpha = 0.55f) else scheme.primary.copy(alpha = 0.10f)),
+                    .background(if (isSelected) Color.White.copy(alpha = 0.22f) else scheme.primary.copy(alpha = 0.10f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -399,7 +416,7 @@ private fun ServerListItem(
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp,
-                    color = if (isSelected) scheme.onSecondaryContainer else scheme.primary,
+                    color = if (isSelected) Color.White else scheme.primary,
                     maxLines = 1,
                     softWrap = false,
                     modifier = Modifier.verticalText(),
@@ -416,7 +433,7 @@ private fun ServerListItem(
                     text = row.remarks,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = scheme.onSurface,
+                    color = mainColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -425,24 +442,24 @@ private fun ServerListItem(
                         text = row.statistics,
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.bodySmall,
-                        color = scheme.onSurfaceVariant,
+                        color = subColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    PingPill(row.testDelayMillis)
+                    PingPill(row.testDelayMillis, onBlue = isSelected)
                 }
             }
             // Rail with the buttons
             Row(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .background(scheme.surfaceContainerHigh)
+                    .background(if (isSelected) Color.Transparent else scheme.surfaceContainerHigh)
                     .padding(horizontal = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (!doubleColumnDisplay) {
-                    RailButton(R.drawable.ic_edit_24dp, stringResource(R.string.acc_edit)) {
+                    RailButton(R.drawable.ic_edit_24dp, stringResource(R.string.acc_edit), onBlue = isSelected) {
                         actions.edit(row.guid, row.profile)
                     }
                 }
@@ -450,6 +467,7 @@ private fun ServerListItem(
                 RailButton(
                     if (doubleColumnDisplay) R.drawable.ic_more_vert_24dp else R.drawable.ic_share_24dp,
                     stringResource(if (doubleColumnDisplay) R.string.acc_more else R.string.title_configuration_share),
+                    onBlue = isSelected,
                 ) { actions.more(row.guid, row.profile) }
             }
         }
@@ -457,20 +475,228 @@ private fun ServerListItem(
 }
 
 @Composable
-private fun RailButton(@androidx.annotation.DrawableRes iconRes: Int, description: String, onClick: () -> Unit) {
+private fun RailButton(
+    @androidx.annotation.DrawableRes iconRes: Int,
+    description: String,
+    onBlue: Boolean = false,
+    onClick: () -> Unit,
+) {
     IconButton(
         onClick = onClick,
         modifier = Modifier
             .size(40.dp)
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primary),
+            .background(if (onBlue) Color.White.copy(alpha = 0.22f) else MaterialTheme.colorScheme.primary),
     ) {
         Icon(
             painter = painterResource(iconRes),
             contentDescription = description,
-            tint = MaterialTheme.colorScheme.onPrimary,
+            tint = if (onBlue) Color.White else MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier.size(20.dp),
         )
+    }
+}
+
+private val ConfigBlue = Color(0xFF2F7BF6)
+private val ConfigBlueDark = Color(0xFF1D5FD8)
+
+/** One line of the grouped list: the card of a group, or one config under an open card. */
+private sealed interface ConfigListEntry {
+    val key: String
+
+    class Header(val group: GroupMapItem, val count: Int, val open: Boolean) : ConfigListEntry {
+        override val key: String get() = "group:" + group.id
+    }
+
+    class Config(val groupId: String, val row: ServerRowUiModel) : ConfigListEntry {
+        override val key: String get() = row.guid
+    }
+}
+
+/**
+ * Matixray: the configs page as V2Box shows it: one card per group (Default, the free group, the groups the user
+ * named, every subscription), each with a small triangle that opens or closes it and a refresh button, and the configs
+ * of the open cards under it. The selected config is blue. Which cards are open is saved across rotation (by group id).
+ */
+@Composable
+internal fun GroupedConfigsList(
+    groups: List<GroupMapItem>,
+    mainViewModel: MainViewModel,
+    selectedGuid: String?,
+    selectedGroupId: String,
+    locateTarget: LocateTarget?,
+    searchQuery: String,
+    fetchBusy: Boolean,
+    onSelectGroup: (String) -> Unit,
+    onRefreshGroup: (String) -> Unit,
+    onSelectServer: (String) -> Unit,
+    onEditServer: (String, ProfileItem) -> Unit,
+    onShareServer: (String, ProfileItem) -> Unit,
+    onMoreServer: (String, ProfileItem) -> Unit,
+    onLocateHandled: () -> Unit,
+    contentPadding: PaddingValues,
+) {
+    val cards = remember(groups) { groups.filter { it.id.isNotEmpty() } }
+    val rowsByGroup = HashMap<String, List<ServerRowUiModel>>()
+    cards.forEach { group ->
+        key(group.id) {
+            val flow = remember(group.id, mainViewModel) { mainViewModel.serverGroupState(group.id) }
+            val state by flow.collectAsStateWithLifecycle()
+            rowsByGroup[group.id] = state.rows
+        }
+    }
+
+    // The ids of the open cards, joined by commas (ids never hold one); the selected card is open at first.
+    var openIds by rememberSaveable { mutableStateOf("") }
+    var openInitialized by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(cards) {
+        if (!openInitialized && cards.isNotEmpty()) {
+            openInitialized = true
+            openIds = cards.firstOrNull { it.id == selectedGroupId }?.id ?: cards.first().id
+        }
+    }
+    val open = openIds.split(',').filter { it.isNotEmpty() }.toSet()
+    val searching = searchQuery.isNotEmpty()
+
+    val entries = ArrayList<ConfigListEntry>()
+    cards.forEach { group ->
+        val rows = rowsByGroup[group.id].orEmpty()
+        if (searching && rows.isEmpty()) return@forEach
+        val isOpen = searching || group.id in open
+        entries += ConfigListEntry.Header(group, rows.size, isOpen)
+        if (isOpen) rows.forEach { entries += ConfigListEntry.Config(group.id, it) }
+    }
+
+    val listState = rememberLazyListState()
+    LaunchedEffect(locateTarget, open, entries.size) {
+        val target = locateTarget ?: return@LaunchedEffect
+        if (target.groupId.isNotEmpty() && target.groupId !in open) {
+            openIds = (open + target.groupId).joinToString(",")
+            return@LaunchedEffect
+        }
+        val index = entries.indexOfFirst { it is ConfigListEntry.Config && it.row.guid == target.serverGuid }
+        if (index < 0) return@LaunchedEffect
+        listState.scrollToItem(index, -listState.layoutInfo.viewportSize.height / 3)
+        onLocateHandled()
+    }
+
+    // A tap on a config also makes its group the selected one (the tests and the sort work on the selected group).
+    val groupOfGuid = HashMap<String, String>()
+    entries.forEach { if (it is ConfigListEntry.Config) groupOfGuid[it.row.guid] = it.groupId }
+    val actions = ServerRowActions(
+        select = { guid ->
+            groupOfGuid[guid]?.let { if (it != selectedGroupId) onSelectGroup(it) }
+            onSelectServer(guid)
+        },
+        edit = onEditServer,
+        share = onShareServer,
+        more = onMoreServer,
+        remove = { _, _ -> },
+    )
+
+    LazyColumn(
+        state = listState,
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScrollbar(listState),
+        contentPadding = contentPadding,
+    ) {
+        items(items = entries, key = { it.key }) { entry ->
+            when (entry) {
+                is ConfigListEntry.Header -> GroupHeaderCard(
+                    group = entry.group,
+                    count = entry.count,
+                    open = entry.open,
+                    selected = entry.group.id == selectedGroupId,
+                    refreshing = fetchBusy && entry.group.id == AppConfig.FREE_SUBSCRIPTION_ID,
+                    onToggle = {
+                        val id = entry.group.id
+                        openIds = if (id in open) (open - id).joinToString(",") else (open + id).joinToString(",")
+                        onSelectGroup(id)
+                    },
+                    onRefresh = { onRefreshGroup(entry.group.id) },
+                )
+
+                is ConfigListEntry.Config -> Box(modifier = Modifier.padding(horizontal = 6.dp)) {
+                    ServerListItem(
+                        row = entry.row,
+                        isSelected = entry.row.guid == selectedGuid,
+                        doubleColumnDisplay = false,
+                        actions = actions,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** The card of one group: a small triangle that opens or closes it, the name with the number of configs, and a refresh button. */
+@Composable
+private fun GroupHeaderCard(
+    group: GroupMapItem,
+    count: Int,
+    open: Boolean,
+    selected: Boolean,
+    refreshing: Boolean,
+    onToggle: () -> Unit,
+    onRefresh: () -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(16.dp)
+    val angle by animateFloatAsState(if (open) 90f else 0f, label = "groupTriangle")
+    val name = if (group.id == AppConfig.FREE_SUBSCRIPTION_ID) stringResource(R.string.mx_group_free) else group.remarks
+    val stateText = stringResource(if (open) R.string.mx_group_expanded else R.string.mx_group_collapsed)
+    val refreshLabel = stringResource(R.string.mx_group_refresh, name)
+    val triangleColor = scheme.primary
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 14.dp, vertical = 6.dp)
+                .fillMaxWidth()
+                .liquidGlass(shape, tint = if (selected) scheme.primary.copy(alpha = 0.07f) else Color.Unspecified)
+                .then(if (selected) Modifier.border(1.dp, scheme.primary.copy(alpha = 0.6f), shape) else Modifier),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(shape)
+                    .clickable(role = Role.Button, onClick = onToggle)
+                    .semantics { stateDescription = stateText }
+                    .padding(start = 16.dp, top = 14.dp, bottom = 14.dp, end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Canvas(modifier = Modifier.size(12.dp).graphicsLayer { rotationZ = angle }) {
+                    val triangle = Path().apply {
+                        moveTo(0f, 0f)
+                        lineTo(size.width, size.height / 2f)
+                        lineTo(0f, size.height)
+                        close()
+                    }
+                    drawPath(triangle, triangleColor)
+                }
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = "$name ($count)",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = scheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            IconButton(onClick = onRefresh, modifier = Modifier.padding(end = 4.dp)) {
+                if (refreshing) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = scheme.primary)
+                } else {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_refresh_24dp),
+                        contentDescription = refreshLabel,
+                        tint = scheme.primary,
+                    )
+                }
+            }
+        }
     }
 }
 

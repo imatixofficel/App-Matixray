@@ -17,8 +17,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -109,8 +113,8 @@ fun ScannerScreen(onBack: () -> Unit, viewModel: ScannerViewModel) {
                 }
             }
             if (data != null) {
-                items(data.ips, key = { it.ip }) { ip ->
-                    IpRow(ip = ip, onClick = { viewModel.copyIp(ip.ip) })
+                itemsIndexed(data.ips, key = { _, ip -> ip.ip }) { index, ip ->
+                    IpRow(rank = index + 1, ip = ip, onClick = { viewModel.copyIp(ip.ip) })
                 }
             } else if (state.hasError) {
                 item(key = "error") {
@@ -130,7 +134,7 @@ fun ScannerScreen(onBack: () -> Unit, viewModel: ScannerViewModel) {
     }
 }
 
-private const val RADAR_BLIPS = 6
+private const val RADAR_BLIPS = 12
 
 @Composable
 private fun StatBox(label: String, value: Int?, modifier: Modifier = Modifier) {
@@ -200,6 +204,9 @@ private fun RadarView(ips: List<String>, modifier: Modifier = Modifier) {
             drawLine(XfPurpleLight, c, Offset(c.x + radius, c.y), 2.dp.toPx())
         }
 
+        drawCircle(XfPurple.copy(alpha = 0.25f + 0.2f * blink), radius = 10.dp.toPx(), center = c)
+        drawCircle(XfPurpleLight, radius = 3.dp.toPx(), center = c)
+
         ips.forEachIndexed { index, ip ->
             val h = abs(ip.hashCode())
             val angle = Math.toRadians((h % 360).toDouble())
@@ -212,8 +219,9 @@ private fun RadarView(ips: List<String>, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun IpRow(ip: ScannedIp, onClick: () -> Unit) {
+private fun IpRow(rank: Int, ip: ScannedIp, onClick: () -> Unit) {
     val level = pingLevelOf(ip.ms)
+    val pingTint = pingColor(level, MaterialTheme.colorScheme.onSurfaceVariant)
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -225,6 +233,18 @@ private fun IpRow(ip: ScannedIp, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            Text(
+                text = rank.toString(),
+                color = XfPurpleLight,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .size(26.dp)
+                    .clip(CircleShape)
+                    .background(XfPurple.copy(alpha = 0.18f))
+                    .wrapContentSize(Alignment.Center),
+            )
             SourceBadge(ip.source)
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 MonoLtrText(
@@ -244,9 +264,13 @@ private fun IpRow(ip: ScannedIp, onClick: () -> Unit) {
             if (ip.ms != Int.MAX_VALUE) {
                 Text(
                     text = stringResource(R.string.xf_ping_ms, ip.ms),
-                    color = pingColor(level, MaterialTheme.colorScheme.onSurfaceVariant),
+                    color = pingTint,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.End,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(pingTint.copy(alpha = 0.14f))
+                        .padding(horizontal = 8.dp, vertical = 3.dp),
                 )
             }
         }

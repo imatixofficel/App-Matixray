@@ -133,7 +133,7 @@
     <string name="mx_tour_best_title">Best config</string>
     <string name="mx_tour_best_body">The star finds the fastest config and connects to it by itself.</string>
     <string name="mx_tour_bar_title">Connection bar</string>
-    <string name="mx_tour_bar_body">See the state of the connection. Tap the text to test it and see the ping right there, and use the button to connect or disconnect.</string>
+    <string name="mx_tour_bar_body">See the state of the connection. Tap the text to test it, and use the button to connect or disconnect.</string>
     <string name="mx_tour_tab_settings_title">Settings</string>
     <string name="mx_tour_tab_settings_body">Every section of the old menu is now in the Settings tab.</string>
     <string name="mx_tour_tools_title">Matix tools</string>
@@ -153,21 +153,12 @@
     <string name="mx_fetch_result">%1$d new configs added from %2$d of %3$d sources, testing them now</string>
     <string name="mx_fetch_none">No new config was found; the sources had nothing new</string>
     <string name="mx_fetch_unreachable">No source could be reached; check the internet connection</string>
-    <string name="mx_bar_btn_connecting">Connecting…</string>
-    <string name="mx_tour_quick_title">Quick buttons</string>
-    <string name="mx_tour_quick_body">Get configs from the public lists, test them all, sort the best to the top, or remove the dead ones.</string>
-    <!-- Matixray: add configs by hand, ping in the connection bar -->
-    <string name="mx_add_manual_menu">Paste or type configs</string>
-    <string name="mx_add_manual_title">Add configs by hand</string>
-    <string name="mx_add_manual_hint">Paste one or more links, one per line: vmess, vless, trojan, ss, hysteria2 or a subscription link. They are added to the open group.</string>
-    <string name="mx_add_manual_placeholder" translatable="false">vless://…\nvmess://…</string>
-    <string name="mx_add_manual_paste">Paste</string>
-    <string name="mx_add_manual_add">Add</string>
-    <string name="mx_add_manual_cancel">Cancel</string>
-    <string name="mx_add_manual_detected">%1$d links found</string>
-    <string name="mx_add_manual_added">%1$d configs added</string>
-    <string name="mx_add_manual_invalid">No valid config was found in the text</string>
-    <string name="mx_add_manual_clipboard_empty">The clipboard is empty</string>
-    <string name="mx_bar_testing">Testing the ping…</string>
-    <string name="mx_bar_ping_again">Tap to test again</string>
+    <string name="mx_group_free">Free</string>
+    <string name="mx_group_mine">My configs</string>
+    <string name="mx_group_expanded">Open</string>
+    <string name="mx_group_collapsed">Closed</string>
+    <string name="mx_group_refresh">Update %1$s</string>
+    <string name="mx_import_name_title">Name of the new group</string>
+    <string name="mx_import_name_hint">Group name</string>
+    <string name="mx_import_name_ok">Add</string>
 </resources>

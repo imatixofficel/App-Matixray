@@ -22,14 +22,17 @@ data class ConfigSource(val name: String, val url: String)
  */
 object ConfigSources {
     val all: List<ConfigSource> = listOf(
+        // Mahsa NG's public lists first: they are kept alive for Iran and hold the most useful links.
+        ConfigSource("Mahsa NG", "https://raw.githubusercontent.com/MahsaNetConfigTopic/config/main/xray_final.txt"),
         // The app's own Xfinder lists (same links as the Xfinder screen).
         ConfigSource("Matix | Xfinder Top20", "https://imatixofficel.github.io/Xfinder/output/top20.txt"),
         ConfigSource("Matix | Xfinder All", "https://imatixofficel.github.io/Xfinder/output/all.txt"),
-        // Mahsa NG's public list.
-        ConfigSource("Mahsa NG", "https://raw.githubusercontent.com/MahsaNetConfigTopic/config/main/xray_final.txt"),
-        // Well-known open collectors.
+        // Well-known open collectors, refreshed every few minutes by their owners.
         ConfigSource("Epodonios", "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_Sub.txt"),
         ConfigSource("barry-far", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/All_Configs_Sub.txt"),
+        ConfigSource("ebrasha", "https://raw.githubusercontent.com/ebrasha/free-v2ray-public-list/main/V2Ray-Config-By-EbraSha.txt"),
+        ConfigSource("MatinGhanbari", "https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/v2ray/super-sub.txt"),
+        ConfigSource("TVC (yebekhe)", "https://raw.githubusercontent.com/yebekhe/TVC/main/subscriptions/xray/base64/mix"),
         ConfigSource("V2RayAggregator", "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt"),
         ConfigSource("Telegram collector", "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/splitted/mixed"),
         ConfigSource("Pawdroid", "https://raw.githubusercontent.com/Pawdroid/Free-servers/main/sub"),

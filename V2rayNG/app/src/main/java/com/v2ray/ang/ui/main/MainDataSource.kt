@@ -46,6 +46,18 @@ interface MainDataSource : Closeable {
     fun sortByTestResultsForSub(subId: String)
     fun getSubsList(): List<String>
 
+    /** Matixray: makes a group without a link, named [name], for configs the user adds; returns its id. */
+    fun createLocalGroup(name: String): String
+
+    /** Matixray: makes the free group (the one "get configs" fills) when it is missing, named [name]; returns its id. */
+    fun ensureFreeGroup(name: String): String
+
+    /** Matixray: removes every config of [groupId]; the group itself stays. */
+    fun clearGroup(groupId: String)
+
+    /** Matixray: removes the group [groupId] with its configs. */
+    fun removeGroup(groupId: String)
+
     suspend fun importBatchConfig(
         server: String?,
         subscriptionId: String,
