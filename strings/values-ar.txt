@@ -1,0 +1,8 @@
+    <string name="mx_group_free">مجاني</string>
+    <string name="mx_group_mine">إعداداتي</string>
+    <string name="mx_group_expanded">مفتوحة</string>
+    <string name="mx_group_collapsed">مغلقة</string>
+    <string name="mx_group_refresh">تحديث %1$s</string>
+    <string name="mx_import_name_title">اسم المجموعة الجديدة</string>
+    <string name="mx_import_name_hint">اسم المجموعة</string>
+    <string name="mx_import_name_ok">إضافة</string>

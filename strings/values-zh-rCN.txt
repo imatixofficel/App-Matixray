@@ -1,0 +1,8 @@
+    <string name="mx_group_free">免费</string>
+    <string name="mx_group_mine">我的配置</string>
+    <string name="mx_group_expanded">已展开</string>
+    <string name="mx_group_collapsed">已收起</string>
+    <string name="mx_group_refresh">更新 %1$s</string>
+    <string name="mx_import_name_title">新分组名称</string>
+    <string name="mx_import_name_hint">分组名称</string>
+    <string name="mx_import_name_ok">添加</string>

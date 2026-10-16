@@ -1,0 +1,8 @@
+    <string name="mx_group_free">رایگان</string>
+    <string name="mx_group_mine">کانفیگ‌های من</string>
+    <string name="mx_group_expanded">باز</string>
+    <string name="mx_group_collapsed">بسته</string>
+    <string name="mx_group_refresh">بروزرسانی %1$s</string>
+    <string name="mx_import_name_title">نام گروه جدید</string>
+    <string name="mx_import_name_hint">نام گروه</string>
+    <string name="mx_import_name_ok">افزودن</string>

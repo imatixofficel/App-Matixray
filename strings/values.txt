@@ -1,0 +1,8 @@
+    <string name="mx_group_free">Free</string>
+    <string name="mx_group_mine">My configs</string>
+    <string name="mx_group_expanded">Open</string>
+    <string name="mx_group_collapsed">Closed</string>
+    <string name="mx_group_refresh">Update %1$s</string>
+    <string name="mx_import_name_title">Name of the new group</string>
+    <string name="mx_import_name_hint">Group name</string>
+    <string name="mx_import_name_ok">Add</string>
