@@ -1,8 +1,0 @@
-    <string name="mx_group_free">Miễn phí</string>
-    <string name="mx_group_mine">Cấu hình của tôi</string>
-    <string name="mx_group_expanded">Đang mở</string>
-    <string name="mx_group_collapsed">Đang đóng</string>
-    <string name="mx_group_refresh">Cập nhật %1$s</string>
-    <string name="mx_import_name_title">Tên nhóm mới</string>
-    <string name="mx_import_name_hint">Tên nhóm</string>
-    <string name="mx_import_name_ok">Thêm</string>

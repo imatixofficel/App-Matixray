@@ -1,8 +1,0 @@
-    <string name="mx_group_free">رایگون</string>
-    <string name="mx_group_mine">کانفیگای مه</string>
-    <string name="mx_group_expanded">وا</string>
-    <string name="mx_group_collapsed">بسته</string>
-    <string name="mx_group_refresh">نو کردن %1$s</string>
-    <string name="mx_import_name_title">نوم گروه تازه</string>
-    <string name="mx_import_name_hint">نوم گروه</string>
-    <string name="mx_import_name_ok">ایزونی</string>
