@@ -166,7 +166,7 @@ class MainViewModel(
     private var fetchJob: Job? = null
 
     // Matixray: the liquid-glass look of the cards can be turned off.
-    private val _glassCards = MutableStateFlow(MmkvManager.decodeSettingsBool(AppConfig.PREF_GLASS_CARDS, true))
+    private val _glassCards = MutableStateFlow(MmkvManager.decodeSettingsBool(AppConfig.PREF_GLASS_CARDS, false))
     val glassCards: StateFlow<Boolean> = _glassCards.asStateFlow()
 
     fun setGlassCards(enabled: Boolean) {
@@ -1147,23 +1147,27 @@ class MainViewModel(
 
     /**
      * Opens a plain TCP connection to every config of the group [groupId], 40 at a time with a short timeout, and removes
-     * the ones that do not answer. Configs that run over UDP (hysteria, tuic, wireguard) cannot be checked this way and
+     * the ones that do not answer, then keeps only the [REAL_TEST_MAX] that answered fastest for the real test. Configs that run over UDP (hysteria, tuic, wireguard) cannot be checked this way and
      * stay for the real test. Returns how many were removed.
      */
     private suspend fun dropUnreachable(groupId: String): Int = coroutineScope {
         val gate = Semaphore(TCP_PRECHECK_PARALLEL)
-        dataSource.getServerGuidList(groupId).map { guid ->
+        val guids = dataSource.getServerGuidList(groupId)
+        // The connect time of each config that answered (a config that cannot be checked this way counts as 500 ms).
+        val times = guids.map { guid ->
             async(ioDispatcher) {
-                val profile = dataSource.decodeServerConfig(guid) ?: return@async false
+                val profile = dataSource.decodeServerConfig(guid) ?: return@async guid to -1L
                 val host = profile.server
                 val port = profile.serverPort?.toIntOrNull()
                 val udp = profile.configType == EConfigType.HYSTERIA2 || profile.configType == EConfigType.WIREGUARD
-                if (udp || host.isNullOrEmpty() || port == null) return@async false
-                val ok = gate.withPermit { SpeedtestManager.socketConnectTime(host, port, TCP_PRECHECK_TIMEOUT_MS) >= 0 }
-                if (!ok) dataSource.removeServer(guid)
-                !ok
+                if (udp) return@async guid to 500L
+                if (host.isNullOrEmpty() || port == null) return@async guid to -1L
+                guid to gate.withPermit { SpeedtestManager.socketConnectTime(host, port, TCP_PRECHECK_TIMEOUT_MS) }
             }
-        }.awaitAll().count { it }
+        }.awaitAll()
+        val keep = times.filter { it.second >= 0L }.sortedBy { it.second }.take(REAL_TEST_MAX).map { it.first }.toHashSet()
+        guids.filter { it !in keep }.forEach { dataSource.removeServer(it) }
+        guids.size - keep.size
     }
 
     /**
@@ -1684,9 +1688,11 @@ class MainViewModel(
 
     companion object {
         /** Matixray: limits of one "get configs" run, so the list and the tests that follow stay small. */
-        private const val MAX_FETCH_TOTAL = 150
-        private const val MAX_FETCH_PER_SOURCE = 120
-        private const val TCP_PRECHECK_PARALLEL = 40
+        private const val MAX_FETCH_TOTAL = 600
+        private const val MAX_FETCH_PER_SOURCE = 30
+        private const val TCP_PRECHECK_PARALLEL = 60
+        /** How many configs go on to the real test after the quick check: the ones that answered fastest. */
+        private const val REAL_TEST_MAX = 150
         private const val TCP_PRECHECK_TIMEOUT_MS = 1200
         /** How many tested configs the free group keeps: few, but the fastest ones that work. */
         private const val FREE_KEEP_BEST = 30
