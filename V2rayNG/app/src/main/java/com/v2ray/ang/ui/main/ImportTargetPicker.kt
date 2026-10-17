@@ -69,6 +69,12 @@ internal fun ImportTargetPicker(
         }
         if (targetId == null) {
             Spacer(Modifier.height(10.dp))
+            Text(
+                text = stringResource(R.string.mx_import_target_empty_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = scheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(6.dp))
             val fieldShape = RoundedCornerShape(14.dp)
             Box(
                 modifier = Modifier

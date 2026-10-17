@@ -57,7 +57,7 @@
 
     <!-- About -->
     <string name="mx_about_title">About Matixray</string>
-    <string name="mx_about_body">This project is an upgraded build that contains V2Ray.\n\nV2Ray is an open-source platform for building secure, fast network connections. It supports protocols such as VMess, VLESS, Trojan and Shadowsocks, and encrypts and routes your traffic.\n\nMatixray is an Android client based on V2Ray and the Xray core, with a modern interface, day and night modes, automatic best-config search, Xfinder and Psiphon.</string>
+    <string name="mx_about_body">Matixray is an upgraded build of V2Ray, made to connect fast and keep you connected.\n\nWhat it gives you:\n• Free configs: one tap on “Get configs” downloads Mahsa NG\'s public lists, tests every config on your own connection and keeps only the fastest working ones (about 30) in the Free group.\n• Groups and subscriptions: your own groups, subscription links, refresh and delete per group.\n• Xfinder and the IP scanner: finds clean IPs and can mix them into your configs.\n• Auto-connect: if the server drops, the app switches to the best working one.\n• Protocols: VMess, VLESS, Trojan, Shadowsocks, Hysteria2 and more, on the Xray core, with Psiphon and Aether.\n\nThe free configs come from the open lists of Mahsa NG and its community, whom we thank. Join our Telegram channel for news and updates.</string>
     <string name="mx_telegram_button">Join the Telegram channel</string>
     <string name="mx_remove_sni_title">Remove SNI</string>
     <string name="mx_remove_sni_summary">The server name (SNI) is not sent in TLS connections</string>
@@ -183,7 +183,32 @@
     <string name="mx_group_deleted">Group deleted</string>
     <string name="mx_fetch_kept">Kept %1$d working configs, removed %2$d that did not respond</string>
     <string name="mx_fetch_only_working_title">Keep only working configs</string>
-    <string name="mx_fetch_only_working_hint">After “Get configs” every downloaded config is tested with a real connection test. Only the ones that respond are added to the Free group; dead ones are deleted automatically. This takes a little longer, but the list contains only configs that work.</string>
+    <string name="mx_fetch_only_working_hint">After “Get configs” the app downloads Mahsa NG\'s lists, drops the servers that do not even open a connection, then tests the rest with a real connection test on your own network. Only the fastest working configs (about 30) stay in the Free group and the dead ones are deleted, so every config you see should connect. This takes a short while. Turn it off to keep everything that was downloaded, working or not.</string>
     <string name="mx_import_target_title">Add to</string>
     <string name="mx_import_target_new">New group</string>
+    <string name="mx_free_badge">Free</string>
+    <string name="mx_import_target_empty_note">If you leave the name empty, the configs go to the Default group.</string>
+    <string name="mx_settings_configs">Configs</string>
+    <string name="mx_settings_look">Appearance</string>
+    <string name="mx_glass_title">Liquid glass cards</string>
+    <string name="mx_glass_hint">Draws the cards of the app (configs, groups, settings) with a translucent glass look: a soft see-through fill and a bright edge. Turn it off for plain solid cards, which are a little lighter on old phones.</string>
+    <string name="mx_isp_title">My internet provider</string>
+    <string name="mx_isp_hint">Choose the company your internet comes from. Every config is tested on your own connection, so only what really works on your provider is kept; where a list made for your provider exists, the app reads it too. Auto means all lists.</string>
+    <string name="mx_isp_auto">Auto</string>
+    <string name="mx_isp_mci">MCI (Hamrah-e Avval)</string>
+    <string name="mx_isp_irancell">Irancell</string>
+    <string name="mx_isp_shatel">Shatel</string>
+    <string name="mx_isp_tci">TCI (Mokhaberat)</string>
+    <string name="mx_isp_rightel">Rightel</string>
+    <string name="xf_mix_button">Mix IPs with a config</string>
+    <string name="xf_mix_title">Mix scanner IPs with a config</string>
+    <string name="xf_mix_hint">Each of the best scanned IPs becomes one copy of the config with that IP as its address. This suits configs that run behind Cloudflare or another CDN. The copies are added to a new group.</string>
+    <string name="xf_mix_count">How many IPs (up to %1$d)</string>
+    <string name="xf_mix_pick_title">Which config</string>
+    <string name="xf_mix_paste">Paste a config</string>
+    <string name="xf_mix_paste_hint">Paste a vless, vmess or trojan link</string>
+    <string name="xf_mix_go">Mix</string>
+    <string name="xf_mix_group_name">Scanner IPs</string>
+    <string name="xf_mix_done">Added %1$d configs with scanner IPs</string>
+    <string name="xf_mix_failed">Could not mix: use a vless, vmess or trojan config</string>
 </resources>

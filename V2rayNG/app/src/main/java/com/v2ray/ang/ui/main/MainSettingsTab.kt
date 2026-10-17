@@ -45,6 +45,12 @@ import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.extension.toSpeedString
 import com.v2ray.ang.ui.compose.SuccessBadge
+import com.v2ray.ang.ui.compose.liquidGlass
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape as ChipShape
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import com.v2ray.ang.handler.IspChoice
 import com.v2ray.ang.util.Utils
 import java.util.Locale
 
@@ -83,6 +89,10 @@ fun MainSettingsTab(
     onAutoSwitchChange: (Boolean) -> Unit,
     fetchOnlyWorking: Boolean,
     onFetchOnlyWorkingChange: (Boolean) -> Unit,
+    glassCards: Boolean,
+    onGlassCardsChange: (Boolean) -> Unit,
+    isp: String,
+    onIspChange: (String) -> Unit,
     updateAvailable: Boolean,
     onNavigate: (MainDestination) -> Unit,
     tour: TourState,
@@ -121,6 +131,30 @@ fun MainSettingsTab(
                 }
             }
 
+            SectionLabel(stringResource(R.string.mx_settings_configs))
+            SettingsCard {
+                IspRow(isp = isp, onIspChange = onIspChange)
+                RowDivider()
+                SwitchRow(
+                    iconRes = R.drawable.ic_cloud_download_24dp,
+                    label = stringResource(R.string.mx_fetch_only_working_title),
+                    hint = stringResource(R.string.mx_fetch_only_working_hint),
+                    checked = fetchOnlyWorking,
+                    onCheckedChange = onFetchOnlyWorkingChange,
+                )
+            }
+
+            SectionLabel(stringResource(R.string.mx_settings_look))
+            SettingsCard {
+                SwitchRow(
+                    iconRes = R.drawable.ic_settings_24dp,
+                    label = stringResource(R.string.mx_glass_title),
+                    hint = stringResource(R.string.mx_glass_hint),
+                    checked = glassCards,
+                    onCheckedChange = onGlassCardsChange,
+                )
+            }
+
             SectionLabel(stringResource(R.string.mx_settings_status))
             SettingsCard {
                 val idle = stringResource(R.string.mx_stat_none)
@@ -148,14 +182,6 @@ fun MainSettingsTab(
                     hint = stringResource(R.string.mx_auto_switch_hint),
                     checked = autoSwitch,
                     onCheckedChange = onAutoSwitchChange,
-                )
-                RowDivider()
-                SwitchRow(
-                    iconRes = R.drawable.ic_cloud_download_24dp,
-                    label = stringResource(R.string.mx_fetch_only_working_title),
-                    hint = stringResource(R.string.mx_fetch_only_working_hint),
-                    checked = fetchOnlyWorking,
-                    onCheckedChange = onFetchOnlyWorkingChange,
                 )
                 RowDivider()
                 LinkRow(
@@ -193,9 +219,7 @@ private fun SettingsCard(modifier: Modifier = Modifier, content: @Composable () 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
+            .liquidGlass(shape),
     ) { content() }
 }
 
@@ -262,8 +286,6 @@ private fun NavRow(item: MainDestination, showNew: Boolean, onClick: () -> Unit)
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f, fill = false),
         )
         if (showNew) SuccessBadge(text = stringResource(R.string.mx_badge_new))
@@ -288,7 +310,6 @@ private fun InfoRow(@DrawableRes iconRes: Int, label: String, value: String) {
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f),
-            maxLines = 1,
         )
         Text(
             text = value,
@@ -364,7 +385,62 @@ private fun LinkRow(@DrawableRes iconRes: Int, label: String, onClick: () -> Uni
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.weight(1f),
-            maxLines = 1,
         )
     }
+}
+
+
+/** Matixray: the internet provider of the user, with the full explanation of what the choice does. */
+@Composable
+private fun IspRow(isp: String, onIspChange: (String) -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            RowIcon(R.drawable.ic_cloud_download_24dp)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.mx_isp_title),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = stringResource(R.string.mx_isp_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            IspChoice.all.forEach { id ->
+                val selected = id == isp
+                val shape = ChipShape(50)
+                Text(
+                    text = stringResource(ispLabel(id)),
+                    modifier = Modifier
+                        .clip(shape)
+                        .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .semantics { this.selected = selected }
+                        .clickable(role = Role.RadioButton) { onIspChange(id) }
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                )
+            }
+        }
+    }
+}
+
+private fun ispLabel(id: String): Int = when (id) {
+    IspChoice.MCI -> R.string.mx_isp_mci
+    IspChoice.IRANCELL -> R.string.mx_isp_irancell
+    IspChoice.SHATEL -> R.string.mx_isp_shatel
+    IspChoice.TCI -> R.string.mx_isp_tci
+    IspChoice.RIGHTEL -> R.string.mx_isp_rightel
+    else -> R.string.mx_isp_auto
 }

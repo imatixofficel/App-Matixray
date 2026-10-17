@@ -132,6 +132,8 @@ fun MainScreen(
     var showManualAdd by remember { mutableStateOf(false) }
     var groupToDelete by remember { mutableStateOf<com.v2ray.ang.dto.GroupMapItem?>(null) }
     val fetchOnlyWorking by mainViewModel.fetchOnlyWorking.collectAsStateWithLifecycle()
+    val glassCards by mainViewModel.glassCards.collectAsStateWithLifecycle()
+    val isp by mainViewModel.isp.collectAsStateWithLifecycle()
     // Matixray: configs added by hand never go under "Default": they get a new group named by the user; links of
     // subscriptions keep their own way (a group made from the link).
     val defaultGroupName = stringResource(R.string.mx_group_mine)
@@ -146,8 +148,9 @@ fun MainScreen(
                     if (onlySubscriptionLinks) {
                         val (configs, subscriptions) = AngConfigManager.importBatchConfig(text, groupId, false)
                         configs + subscriptions
-                    } else if (targetGroupId != null) {
-                        val (configs, subscriptions) = AngConfigManager.importBatchConfig(text, targetGroupId, true)
+                    } else if (targetGroupId != null || groupName.isBlank()) {
+                        // A chosen group, or no name typed: Default (its configs are stored with an empty group id).
+                        val (configs, subscriptions) = AngConfigManager.importBatchConfig(text, targetGroupId ?: "", true)
                         configs + subscriptions
                     } else {
                         val newId = com.v2ray.ang.util.Utils.getUuid()
@@ -306,6 +309,10 @@ fun MainScreen(
                         onAutoSwitchChange = { mainViewModel.setAutoSwitch(it) },
                         fetchOnlyWorking = fetchOnlyWorking,
                         onFetchOnlyWorkingChange = { mainViewModel.setFetchOnlyWorking(it) },
+                        glassCards = glassCards,
+                        onGlassCardsChange = { mainViewModel.setGlassCards(it) },
+                        isp = isp,
+                        onIspChange = { mainViewModel.setIsp(it) },
                         updateAvailable = updateAvailable,
                         onNavigate = onNavigate,
                         tour = tourState,

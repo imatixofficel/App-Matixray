@@ -8,6 +8,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -59,6 +61,17 @@ import kotlin.math.sin
 fun ScannerScreen(onBack: () -> Unit, viewModel: ScannerViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val data = state.data
+    var showMix by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    if (showMix) {
+        MixDialog(
+            maxCount = data?.ips?.size ?: 0,
+            ownConfigs = state.ownConfigs,
+            busy = state.mixBusy,
+            onLoad = viewModel::loadOwnConfigs,
+            onDismiss = { showMix = false },
+            onMix = { count, guid, pasted -> viewModel.mix(count, guid, pasted) { added -> if (added > 0) showMix = false } },
+        )
+    }
 
     XfinderPage(
         title = stringResource(R.string.xf_nav_scanner),
@@ -93,6 +106,13 @@ fun ScannerScreen(onBack: () -> Unit, viewModel: ScannerViewModel) {
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
+            }
+            item(key = "mix") {
+                androidx.compose.material3.Button(
+                    onClick = { showMix = true },
+                    enabled = data != null && data.ips.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(stringResource(R.string.xf_mix_button)) }
             }
             item(key = "stats") {
                 val stats = data?.stats
@@ -275,4 +295,88 @@ private fun IpRow(rank: Int, ip: ScannedIp, onClick: () -> Unit) {
             }
         }
     }
+}
+
+
+/** Matixray: asks how many IPs to mix and which config to mix them into (one of the user's own, or one pasted). */
+@Composable
+private fun MixDialog(
+    maxCount: Int,
+    ownConfigs: List<OwnConfig>,
+    busy: Boolean,
+    onLoad: () -> Unit,
+    onDismiss: () -> Unit,
+    onMix: (count: Int, ownGuid: String?, pasted: String) -> Unit,
+) {
+    var countText by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf("10") }
+    var pasted by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf("") }
+    var pickedGuid by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf<String?>(null) }
+    androidx.compose.runtime.LaunchedEffect(Unit) { onLoad() }
+    val count = countText.toIntOrNull()?.coerceIn(1, maxOf(maxCount, 1)) ?: 0
+    val scheme = MaterialTheme.colorScheme
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.xf_mix_title)) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.xf_mix_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = scheme.onSurfaceVariant,
+                )
+                androidx.compose.material3.OutlinedTextField(
+                    value = countText,
+                    onValueChange = { v -> countText = v.filter { it.isDigit() }.take(3) },
+                    label = { Text(stringResource(R.string.xf_mix_count, maxCount)) },
+                    singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(
+                    text = stringResource(R.string.xf_mix_pick_title),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    androidx.compose.material3.FilterChip(
+                        selected = pickedGuid == null,
+                        onClick = { pickedGuid = null },
+                        label = { Text(stringResource(R.string.xf_mix_paste)) },
+                    )
+                    ownConfigs.forEach { own ->
+                        androidx.compose.material3.FilterChip(
+                            selected = pickedGuid == own.guid,
+                            onClick = { pickedGuid = own.guid },
+                            label = { Text(own.name, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
+                        )
+                    }
+                }
+                if (pickedGuid == null) {
+                    androidx.compose.material3.OutlinedTextField(
+                        value = pasted,
+                        onValueChange = { pasted = it },
+                        label = { Text(stringResource(R.string.xf_mix_paste_hint)) },
+                        minLines = 2,
+                        maxLines = 5,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(
+                enabled = !busy && count > 0 && (pickedGuid != null || pasted.isNotBlank()),
+                onClick = { onMix(count, pickedGuid, pasted) },
+            ) { Text(stringResource(R.string.xf_mix_go)) }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
+        },
+    )
 }

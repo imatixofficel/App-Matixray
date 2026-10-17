@@ -1,6 +1,8 @@
 package com.v2ray.ang.ui.compose
 
 import android.graphics.BlurMaskFilter
+import com.v2ray.ang.AppConfig
+import com.v2ray.ang.handler.MmkvManager
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -16,6 +18,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
@@ -64,6 +68,14 @@ val LightGlassStyle = GlassStyle(
 
 val LocalGlassStyle = staticCompositionLocalOf { DarkGlassStyle }
 
+/**
+ * Whether the cards use the liquid-glass look. The choice is stored by the main ViewModel ([PREF_GLASS_CARDS]); this
+ * holder only keeps the current value as Compose state so every card redraws when the setting changes.
+ */
+object GlassPrefs {
+    var enabled by mutableStateOf(MmkvManager.decodeSettingsBool(AppConfig.PREF_GLASS_CARDS, true))
+}
+
 val GlassCardShape = RoundedCornerShape(14.dp)
 val GlassPillShape = RoundedCornerShape(50)
 
@@ -95,6 +107,21 @@ fun Modifier.liquidGlass(
     val glass = LocalGlassStyle.current
     // Day: a soft gray shadow under the card, as the cards of the design float a little over the page.
     val dark = LocalDarkTheme.current
+    if (GlassPrefs.enabled) {
+        // Liquid glass (the user can turn it off in the settings): a see-through fill that is brighter on top, and an
+        // edge that catches light on its upper-left and fades toward the lower-right.
+        val fill = if (dark) listOf(Color(0x38FFFFFF), Color(0x12FFFFFF)) else listOf(Color(0xE6FFFFFF), Color(0xB8F4F6FB))
+        val edge = if (dark) listOf(Color(0x80FFFFFF), Color(0x14FFFFFF)) else listOf(Color(0xFFFFFFFF), Color(0x33B8C0D4))
+        var glassResult = (if (dark) this else this.shadow(
+            elevation = 4.dp,
+            shape = shape,
+            clip = false,
+            ambientColor = Color(0x26000000),
+            spotColor = Color(0x26000000),
+        )).clip(shape).background(Brush.verticalGradient(fill))
+        if (tint != Color.Unspecified) glassResult = glassResult.background(tint)
+        return glassResult.border(1.dp, Brush.linearGradient(edge), shape)
+    }
     var result = (if (dark) this else this.shadow(
         elevation = 3.dp,
         shape = shape,

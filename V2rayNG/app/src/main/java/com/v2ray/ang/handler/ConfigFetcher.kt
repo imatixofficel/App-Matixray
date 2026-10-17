@@ -13,31 +13,40 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import java.util.Base64
 
-/** One public list of share links the "get configs" button reads. */
-data class ConfigSource(val name: String, val url: String)
+/**
+ * One public list of share links the "get configs" button reads. [isps] names the internet providers the list is meant
+ * for (see [IspChoice]); empty means it is meant for every provider.
+ */
+data class ConfigSource(val name: String, val url: String, val isps: Set<String> = emptySet())
 
 /**
- * Matixray: the public lists the "get configs" button reads. A source that is down, moved or empty is skipped, so a
- * dead entry costs only its timeout; add or remove entries here, nothing else needs to change.
+ * Matixray: the lists the "get configs" button reads: only Mahsa NG's own public lists. A list that is down, moved or
+ * empty is skipped, so a dead entry costs only its timeout; add an entry here (with [ConfigSource.isps] for a list made
+ * for one provider) and nothing else needs to change.
  */
 object ConfigSources {
     val all: List<ConfigSource> = listOf(
-        // Mahsa NG's public lists first: they are kept alive for Iran and hold the most useful links.
         ConfigSource("Mahsa NG", "https://raw.githubusercontent.com/MahsaNetConfigTopic/config/main/xray_final.txt"),
-        // The app's own Xfinder lists (same links as the Xfinder screen).
-        ConfigSource("Matix | Xfinder Top20", "https://imatixofficel.github.io/Xfinder/output/top20.txt"),
-        ConfigSource("Matix | Xfinder All", "https://imatixofficel.github.io/Xfinder/output/all.txt"),
-        // Well-known open collectors, refreshed every few minutes by their owners.
-        ConfigSource("Epodonios", "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_Sub.txt"),
-        ConfigSource("barry-far", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/All_Configs_Sub.txt"),
-        ConfigSource("ebrasha", "https://raw.githubusercontent.com/ebrasha/free-v2ray-public-list/main/V2Ray-Config-By-EbraSha.txt"),
-        ConfigSource("MatinGhanbari", "https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/v2ray/super-sub.txt"),
-        ConfigSource("TVC (yebekhe)", "https://raw.githubusercontent.com/yebekhe/TVC/main/subscriptions/xray/base64/mix"),
-        ConfigSource("V2RayAggregator", "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt"),
-        ConfigSource("Telegram collector", "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/splitted/mixed"),
-        ConfigSource("Pawdroid", "https://raw.githubusercontent.com/Pawdroid/Free-servers/main/sub"),
-        ConfigSource("ermaozi", "https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/v2ray.txt"),
+        ConfigSource("Mahsa NG | vless", "https://raw.githubusercontent.com/MahsaNetConfigTopic/config/main/xray_final_vless.txt"),
+        ConfigSource("Mahsa NG | mix", "https://raw.githubusercontent.com/MahsaNetConfigTopic/config/main/mix.txt"),
     )
+
+    /** The lists that fit the provider the user chose ([IspChoice.AUTO] or an unknown id means all of them). */
+    fun forIsp(isp: String): List<ConfigSource> {
+        val fitting = all.filter { it.isps.isEmpty() || isp in it.isps }
+        return fitting.ifEmpty { all }
+    }
+}
+
+/** The internet providers the user can say they use; stored by id in the settings. */
+object IspChoice {
+    const val AUTO = "auto"
+    const val MCI = "mci"
+    const val IRANCELL = "irancell"
+    const val SHATEL = "shatel"
+    const val TCI = "tci"
+    const val RIGHTEL = "rightel"
+    val all = listOf(AUTO, MCI, IRANCELL, SHATEL, TCI, RIGHTEL)
 }
 
 /** What one source gave: the share links found in it (shuffled), empty when it was down or held none. */
@@ -82,7 +91,7 @@ object ConfigFetcher {
     private const val PARALLEL_SOURCES = 4
 
     /** How many shuffled links of one source are offered to the importer; the importer stops at its own limits. */
-    const val CANDIDATES_PER_SOURCE = 150
+    const val CANDIDATES_PER_SOURCE = 120
 
     suspend fun fetchAll(
         sources: List<ConfigSource>,

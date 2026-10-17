@@ -17,6 +17,14 @@ import com.v2ray.ang.dto.entities.SubscriptionCache
 import com.v2ray.ang.extension.delay
 import com.v2ray.ang.extension.isComplexType
 import com.v2ray.ang.handler.ConfigFetcher
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.async
+import com.v2ray.ang.handler.SpeedtestManager
+import com.v2ray.ang.enums.EConfigType
+import com.v2ray.ang.handler.IspChoice
 import com.v2ray.ang.handler.ConfigSources
 import com.v2ray.ang.extension.matchesPattern
 import com.v2ray.ang.extension.moveItem
@@ -156,6 +164,26 @@ class MainViewModel(
     private val _fetchState = MutableStateFlow(ConfigFetchState())
     val fetchState: StateFlow<ConfigFetchState> = _fetchState.asStateFlow()
     private var fetchJob: Job? = null
+
+    // Matixray: the liquid-glass look of the cards can be turned off.
+    private val _glassCards = MutableStateFlow(MmkvManager.decodeSettingsBool(AppConfig.PREF_GLASS_CARDS, true))
+    val glassCards: StateFlow<Boolean> = _glassCards.asStateFlow()
+
+    fun setGlassCards(enabled: Boolean) {
+        _glassCards.value = enabled
+        com.v2ray.ang.ui.compose.GlassPrefs.enabled = enabled
+        MmkvManager.encodeSettings(AppConfig.PREF_GLASS_CARDS, enabled)
+    }
+
+    // Matixray: the internet provider the user says they use (see IspChoice); "get configs" reads the lists that fit it.
+    private val _isp = MutableStateFlow(MmkvManager.decodeSettingsString(AppConfig.PREF_ISP) ?: IspChoice.AUTO)
+    val isp: StateFlow<String> = _isp.asStateFlow()
+
+    fun setIsp(id: String) {
+        if (id !in IspChoice.all) return
+        _isp.value = id
+        MmkvManager.encodeSettings(AppConfig.PREF_ISP, id)
+    }
 
     /** True from the end of a "get configs" download until the tests it started finish; then the list is sorted. */
     private var sortAfterTests = false
@@ -866,8 +894,8 @@ class MainViewModel(
 
     // ---------- Business actions (coroutine-based) ----------
     private fun importBatchConfig(configText: String, groupName: String?, targetGroupId: String?) {
-        // Matixray: configs the user adds never go under "Default": they get a group of their own, named by the user.
-        // Only links of subscriptions keep the way they had (a group made from the link itself).
+        // Matixray: the user picks the group of the configs they add (or names a new one); with no choice they go to
+        // Default. Only links of subscriptions keep the way they had (a group made from the link itself).
         val onlySubscriptionLinks = configText.lines().map { it.trim() }.filter { it.isNotEmpty() }
             .let { lines -> lines.isNotEmpty() && lines.all { Utils.isValidSubUrl(it) } }
         if (groupName == null && targetGroupId == null && !onlySubscriptionLinks) {
@@ -879,12 +907,12 @@ class MainViewModel(
             withContext(ioDispatcher) {
                 var madeGroup: String? = null
                 try {
+                    // No group chosen and no name typed: the configs go to Default, as they always did.
                     val target = when {
                         onlySubscriptionLinks -> uiState.value.selectedGroupId
                         targetGroupId != null -> targetGroupId
-                        else -> dataSource.createLocalGroup(
-                            (groupName ?: "").trim().ifEmpty { dataSource.getString(R.string.mx_group_mine) }
-                        ).also { madeGroup = it }
+                        groupName.isNullOrBlank() -> AppConfig.DEFAULT_SUBSCRIPTION_ID
+                        else -> dataSource.createLocalGroup(groupName.trim()).also { madeGroup = it }
                     }
                     val movesSelection = !onlySubscriptionLinks && target != uiState.value.selectedGroupId
                     val (count, countSub) = dataSource.importBatchConfig(configText, target, true)
@@ -1033,7 +1061,7 @@ class MainViewModel(
      * already holds, or one that came twice, is dropped by the app's own duplicate identity.
      */
     private fun fetchConfigs() {
-        val sources = ConfigSources.all
+        val sources = ConfigSources.forIsp(MmkvManager.decodeSettingsString(AppConfig.PREF_ISP) ?: IspChoice.AUTO)
         _fetchState.value = ConfigFetchState(FetchPhase.Downloading, sourcesTotal = sources.size)
         fetchJob = viewModelScope.launch(ioDispatcher) {
             try {
@@ -1082,7 +1110,14 @@ class MainViewModel(
                     }
                 }
                 currentCoroutineContext().ensureActive()
-                if (added == 0) {
+                if (added > 0) {
+                    // A quick TCP check first, many at a time: servers that do not even open a connection are dropped
+                    // before the slower real test, which makes the whole run much shorter.
+                    _fetchState.value = ConfigFetchState(FetchPhase.Downloading, done, sources.size, added)
+                    added -= dropUnreachable(freeId)
+                }
+                currentCoroutineContext().ensureActive()
+                if (added <= 0) {
                     _fetchState.value = ConfigFetchState()
                     toast(dataSource.getString(if (reachable == 0) R.string.mx_fetch_unreachable else R.string.mx_fetch_none))
                     return@launch
@@ -1108,6 +1143,27 @@ class MainViewModel(
                 toastError(R.string.toast_failure)
             }
         }
+    }
+
+    /**
+     * Opens a plain TCP connection to every config of the group [groupId], 40 at a time with a short timeout, and removes
+     * the ones that do not answer. Configs that run over UDP (hysteria, tuic, wireguard) cannot be checked this way and
+     * stay for the real test. Returns how many were removed.
+     */
+    private suspend fun dropUnreachable(groupId: String): Int = coroutineScope {
+        val gate = Semaphore(TCP_PRECHECK_PARALLEL)
+        dataSource.getServerGuidList(groupId).map { guid ->
+            async(ioDispatcher) {
+                val profile = dataSource.decodeServerConfig(guid) ?: return@async false
+                val host = profile.server
+                val port = profile.serverPort?.toIntOrNull()
+                val udp = profile.configType == EConfigType.HYSTERIA2 || profile.configType == EConfigType.WIREGUARD
+                if (udp || host.isNullOrEmpty() || port == null) return@async false
+                val ok = gate.withPermit { SpeedtestManager.socketConnectTime(host, port, TCP_PRECHECK_TIMEOUT_MS) >= 0 }
+                if (!ok) dataSource.removeServer(guid)
+                !ok
+            }
+        }.awaitAll().count { it }
     }
 
     /**
@@ -1541,9 +1597,15 @@ class MainViewModel(
                     if (purge) {
                         val freeId = AppConfig.FREE_SUBSCRIPTION_ID
                         val before = dataSource.getServerGuidList(freeId)
-                        before.filter { (dataSource.decodeAffiliationInfo(it)?.testDelayMillis ?: 0L) <= 0L }
-                            .forEach { dataSource.removeServer(it) }
-                        val kept = dataSource.getServerGuidList(freeId).size
+                        val working = before
+                            .map { it to (dataSource.decodeAffiliationInfo(it)?.testDelayMillis ?: 0L) }
+                            .filter { it.second > 0L }
+                            .sortedBy { it.second }
+                            .take(FREE_KEEP_BEST)
+                            .map { it.first }
+                            .toHashSet()
+                        before.filter { it !in working }.forEach { dataSource.removeServer(it) }
+                        val kept = working.size
                         toast(dataSource.getString(R.string.mx_fetch_kept, kept, before.size - kept))
                     }
                     cacheMutex.withLock { groupDataCache.clear() }
@@ -1622,8 +1684,12 @@ class MainViewModel(
 
     companion object {
         /** Matixray: limits of one "get configs" run, so the list and the tests that follow stay small. */
-        private const val MAX_FETCH_TOTAL = 400
-        private const val MAX_FETCH_PER_SOURCE = 60
+        private const val MAX_FETCH_TOTAL = 150
+        private const val MAX_FETCH_PER_SOURCE = 120
+        private const val TCP_PRECHECK_PARALLEL = 40
+        private const val TCP_PRECHECK_TIMEOUT_MS = 1200
+        /** How many tested configs the free group keeps: few, but the fastest ones that work. */
+        private const val FREE_KEEP_BEST = 30
         private const val FETCH_REFRESH_MS = 700L
 
         /** Matixray: the update check on start runs once per process, not once per screen. */

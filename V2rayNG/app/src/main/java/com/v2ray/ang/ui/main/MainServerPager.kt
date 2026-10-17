@@ -429,14 +429,18 @@ private fun ServerListItem(
                     .padding(start = 12.dp, end = 6.dp),
                 verticalArrangement = Arrangement.spacedBy(5.dp),
             ) {
-                Text(
-                    text = row.remarks,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = mainColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = row.remarks,
+                        modifier = Modifier.weight(1f, fill = false),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = mainColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (row.profile.subscriptionId == AppConfig.FREE_SUBSCRIPTION_ID) FreeBadge(onBlue = isSelected)
+                }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         text = row.statistics,
@@ -685,12 +689,17 @@ private fun GroupHeaderCard(
                 Spacer(Modifier.width(12.dp))
                 Text(
                     text = "$name ($count)",
+                    modifier = Modifier.weight(1f, fill = false),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = scheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (group.id == AppConfig.FREE_SUBSCRIPTION_ID) {
+                    Spacer(Modifier.width(8.dp))
+                    FreeBadge(onBlue = false)
+                }
             }
             if (onDelete != null) {
                 IconButton(onClick = onDelete) {
@@ -730,4 +739,24 @@ internal suspend fun PagerState.navigateToPageOptimized(
     } else {
         scrollToPage(target)
     }
+}
+
+
+/** Matixray: the small green "free" tag shown next to the free group and the configs inside it. */
+@Composable
+private fun FreeBadge(onBlue: Boolean) {
+    val green = Color(0xFF2EBD6B)
+    val shape = RoundedCornerShape(50)
+    Text(
+        text = stringResource(R.string.mx_free_badge),
+        modifier = Modifier
+            .clip(shape)
+            .background(if (onBlue) Color.White.copy(alpha = 0.9f) else green.copy(alpha = 0.16f))
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Bold,
+        color = if (onBlue) Color(0xFF1B7F47) else green,
+        maxLines = 1,
+        softWrap = false,
+    )
 }
