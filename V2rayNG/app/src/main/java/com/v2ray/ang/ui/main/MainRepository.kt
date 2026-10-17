@@ -230,7 +230,7 @@ class MainRepository(
 
     override fun removeGroup(groupId: String) {
         if (groupId == AppConfig.DEFAULT_SUBSCRIPTION_ID) return
-        MmkvManager.removeSubscription(groupId)
+        SettingsManager.removeSubscriptionWithDefault(groupId)
     }
 
     override suspend fun importBatchConfig(

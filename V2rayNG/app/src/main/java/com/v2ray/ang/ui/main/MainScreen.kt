@@ -130,10 +130,12 @@ fun MainScreen(
     // Matixray: the box for configs added by hand. It hands the pasted text to the importer on a worker thread, into
     // the group that is open, then tells the list to read the storage again and answers with the number it added.
     var showManualAdd by remember { mutableStateOf(false) }
+    var groupToDelete by remember { mutableStateOf<com.v2ray.ang.dto.GroupMapItem?>(null) }
+    val fetchOnlyWorking by mainViewModel.fetchOnlyWorking.collectAsStateWithLifecycle()
     // Matixray: configs added by hand never go under "Default": they get a new group named by the user; links of
     // subscriptions keep their own way (a group made from the link).
     val defaultGroupName = stringResource(R.string.mx_group_mine)
-    val importManual: (String, String, (Int) -> Unit) -> Unit = { text, groupName, done ->
+    val importManual: (String, String, String?, (Int) -> Unit) -> Unit = { text, groupName, targetGroupId, done ->
         val groupId = (uiState.selectedGroupId as Any?)?.toString().orEmpty()
         scope.launch {
             var madeGroup = false
@@ -143,6 +145,9 @@ fun MainScreen(
                         .let { lines -> lines.isNotEmpty() && lines.all { com.v2ray.ang.util.Utils.isValidSubUrl(it) } }
                     if (onlySubscriptionLinks) {
                         val (configs, subscriptions) = AngConfigManager.importBatchConfig(text, groupId, false)
+                        configs + subscriptions
+                    } else if (targetGroupId != null) {
+                        val (configs, subscriptions) = AngConfigManager.importBatchConfig(text, targetGroupId, true)
                         configs + subscriptions
                     } else {
                         val newId = com.v2ray.ang.util.Utils.getUuid()
@@ -199,7 +204,8 @@ fun MainScreen(
 
     uiState.pendingImport?.let {
         ImportNameDialog(
-            onConfirm = { name -> onAction(MainAction.ImportBatchConfig(it, name)) },
+            groups = groups,
+            onConfirm = { name, target -> onAction(MainAction.ImportBatchConfig(it, name, target)) },
             onDismiss = { onAction(MainAction.DismissImportNaming) },
         )
     }
@@ -219,8 +225,17 @@ fun MainScreen(
         onConfirmRemove = { guid -> showRemoveConfirm = null; onAction(MainAction.RemoveServer(guid)) }
     )
 
+    groupToDelete?.let { group ->
+        val shownName = if (group.id == com.v2ray.ang.AppConfig.FREE_SUBSCRIPTION_ID) stringResource(R.string.mx_group_free) else group.remarks
+        com.v2ray.ang.ui.compose.DeleteConfirmDialog(
+            message = stringResource(R.string.mx_group_delete_confirm),
+            itemName = shownName,
+            onConfirm = { groupToDelete = null; onAction(MainAction.RemoveGroup(group.id)) },
+            onDismiss = { groupToDelete = null },
+        )
+    }
     if (showManualAdd) {
-        ManualConfigDialog(onDismiss = { showManualAdd = false }, onSubmit = importManual)
+        ManualConfigDialog(onDismiss = { showManualAdd = false }, groups = groups, onSubmit = importManual)
     }
     if (shareTarget != null) {
         val (guid, profile, more) = shareTarget!!
@@ -289,6 +304,8 @@ fun MainScreen(
                         speed = speed,
                         autoSwitch = autoSwitch,
                         onAutoSwitchChange = { mainViewModel.setAutoSwitch(it) },
+                        fetchOnlyWorking = fetchOnlyWorking,
+                        onFetchOnlyWorkingChange = { mainViewModel.setFetchOnlyWorking(it) },
                         updateAvailable = updateAvailable,
                         onNavigate = onNavigate,
                         tour = tourState,
@@ -392,6 +409,8 @@ fun MainScreen(
                             locateTarget = uiState.locateTarget,
                             searchQuery = searchQuery,
                             fetchBusy = fetchState.busy,
+                            hideFreeRows = fetchOnlyWorking,
+                            onDeleteGroup = { group -> groupToDelete = group },
                             onSelectGroup = { id -> onAction(MainAction.SelectGroup(id)) },
                             onRefreshGroup = { id -> onAction(MainAction.RefreshGroup(id)) },
                             onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },

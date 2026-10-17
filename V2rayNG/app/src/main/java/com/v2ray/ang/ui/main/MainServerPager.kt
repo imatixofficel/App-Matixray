@@ -527,6 +527,9 @@ internal fun GroupedConfigsList(
     locateTarget: LocateTarget?,
     searchQuery: String,
     fetchBusy: Boolean,
+    /** While "get configs" tests its configs, the free group shows none: only the working ones are shown, after the tests. */
+    hideFreeRows: Boolean,
+    onDeleteGroup: (GroupMapItem) -> Unit,
     onSelectGroup: (String) -> Unit,
     onRefreshGroup: (String) -> Unit,
     onSelectServer: (String) -> Unit,
@@ -560,7 +563,8 @@ internal fun GroupedConfigsList(
 
     val entries = ArrayList<ConfigListEntry>()
     cards.forEach { group ->
-        val rows = rowsByGroup[group.id].orEmpty()
+        val hidden = hideFreeRows && fetchBusy && group.id == AppConfig.FREE_SUBSCRIPTION_ID
+        val rows = if (hidden) emptyList() else rowsByGroup[group.id].orEmpty()
         if (searching && rows.isEmpty()) return@forEach
         val isOpen = searching || group.id in open
         entries += ConfigListEntry.Header(group, rows.size, isOpen)
@@ -609,6 +613,7 @@ internal fun GroupedConfigsList(
                     open = entry.open,
                     selected = entry.group.id == selectedGroupId,
                     refreshing = fetchBusy && entry.group.id == AppConfig.FREE_SUBSCRIPTION_ID,
+                    onDelete = if (entry.group.id == AppConfig.DEFAULT_SUBSCRIPTION_ID) null else ({ onDeleteGroup(entry.group) }),
                     onToggle = {
                         val id = entry.group.id
                         openIds = if (id in open) (open - id).joinToString(",") else (open + id).joinToString(",")
@@ -638,6 +643,7 @@ private fun GroupHeaderCard(
     open: Boolean,
     selected: Boolean,
     refreshing: Boolean,
+    onDelete: (() -> Unit)?,
     onToggle: () -> Unit,
     onRefresh: () -> Unit,
 ) {
@@ -647,6 +653,7 @@ private fun GroupHeaderCard(
     val name = if (group.id == AppConfig.FREE_SUBSCRIPTION_ID) stringResource(R.string.mx_group_free) else group.remarks
     val stateText = stringResource(if (open) R.string.mx_group_expanded else R.string.mx_group_collapsed)
     val refreshLabel = stringResource(R.string.mx_group_refresh, name)
+    val deleteLabel = stringResource(R.string.mx_group_delete, name)
     val triangleColor = scheme.primary
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(
@@ -684,6 +691,15 @@ private fun GroupHeaderCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+            }
+            if (onDelete != null) {
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_delete_24dp),
+                        contentDescription = deleteLabel,
+                        tint = scheme.error,
+                    )
+                }
             }
             IconButton(onClick = onRefresh, modifier = Modifier.padding(end = 4.dp)) {
                 if (refreshing) {

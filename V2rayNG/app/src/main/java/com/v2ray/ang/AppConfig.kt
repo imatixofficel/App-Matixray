@@ -100,6 +100,8 @@ object AppConfig {
     const val PREF_IS_BOOTED = "pref_is_booted"
     const val PREF_CHECK_UPDATE_PRE_RELEASE = "pref_check_update_pre_release"
     const val PREF_AUTO_SWITCH_ON_DROP = "pref_auto_switch_on_drop"
+    /** Matixray: "get configs" tests every config first and keeps only the working ones (default on). */
+    const val PREF_FETCH_ONLY_WORKING = "pref_fetch_only_working"
     /** Matixray: set once the first-run tour was finished or skipped. */
     const val PREF_TUTORIAL_DONE = "pref_tutorial_done"
     /** Matixray: the opening words ("In the name of God") of the splash screen were shown once. */

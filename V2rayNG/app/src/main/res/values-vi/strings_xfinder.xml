@@ -72,4 +72,12 @@
     <string name="mx_import_name_title">Tên nhóm mới</string>
     <string name="mx_import_name_hint">Tên nhóm</string>
     <string name="mx_import_name_ok">Thêm</string>
+    <string name="mx_group_delete">Xóa nhóm “%1$s”</string>
+    <string name="mx_group_delete_confirm">Nhóm này và mọi cấu hình bên trong sẽ bị xóa. Các nhóm khác không bị ảnh hưởng.</string>
+    <string name="mx_group_deleted">Đã xóa nhóm</string>
+    <string name="mx_fetch_kept">Giữ lại %1$d cấu hình hoạt động, xóa %2$d cấu hình không phản hồi</string>
+    <string name="mx_fetch_only_working_title">Chỉ giữ cấu hình hoạt động</string>
+    <string name="mx_fetch_only_working_hint">Sau khi “Lấy cấu hình”, mỗi cấu hình tải về được kiểm tra bằng bài test kết nối thực. Chỉ cấu hình có phản hồi mới được thêm vào nhóm Miễn phí, cấu hình chết sẽ tự động bị xóa. Việc này mất thêm chút thời gian nhưng danh sách chỉ gồm cấu hình dùng được.</string>
+    <string name="mx_import_target_title">Thêm vào</string>
+    <string name="mx_import_target_new">Nhóm mới</string>
 </resources>

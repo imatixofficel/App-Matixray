@@ -120,13 +120,21 @@ sealed interface MainAction {
      * Matixray: adds configs. Links of a subscription keep their own group; every other config goes to a new group
      * named [groupName]; while it is null the user is asked for the name first, see [MainUiState.pendingImport].
      */
-    data class ImportBatchConfig(val configText: String, val groupName: String? = null) : MainAction
+    data class ImportBatchConfig(
+        val configText: String,
+        val groupName: String? = null,
+        /** An existing group the configs go to; when set, [groupName] is not used. */
+        val targetGroupId: String? = null,
+    ) : MainAction
 
     /** Matixray: the user left the naming of an import, see [MainUiState.pendingImport]. */
     data object DismissImportNaming : MainAction
 
     /** Matixray: brings one group up to date: a subscription is downloaded again, the free group is fetched anew, any other group is pinged. */
     data class RefreshGroup(val groupId: String) : MainAction
+
+    /** Matixray: removes the group [groupId] with every config in it (the Default group stays). */
+    data class RemoveGroup(val groupId: String) : MainAction
 
     data object LocateHandled : MainAction
 

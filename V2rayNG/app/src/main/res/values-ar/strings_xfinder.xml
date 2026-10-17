@@ -72,4 +72,12 @@
     <string name="mx_import_name_title">اسم المجموعة الجديدة</string>
     <string name="mx_import_name_hint">اسم المجموعة</string>
     <string name="mx_import_name_ok">إضافة</string>
+    <string name="mx_group_delete">حذف المجموعة «%1$s»</string>
+    <string name="mx_group_delete_confirm">سيتم حذف هذه المجموعة وجميع الإعدادات بداخلها. لن تتأثر بقية مجموعاتك.</string>
+    <string name="mx_group_deleted">تم حذف المجموعة</string>
+    <string name="mx_fetch_kept">تم الاحتفاظ بـ %1$d إعدادات تعمل وحذف %2$d لم تستجب</string>
+    <string name="mx_fetch_only_working_title">الاحتفاظ بالإعدادات العاملة فقط</string>
+    <string name="mx_fetch_only_working_hint">بعد «جلب الإعدادات» يتم اختبار كل إعداد تم تنزيله باختبار اتصال حقيقي. تتم إضافة الإعدادات التي تستجيب فقط إلى المجموعة المجانية ويتم حذف البقية تلقائيًا. يستغرق ذلك وقتًا أطول قليلًا لكن القائمة تحتوي فقط على إعدادات تعمل.</string>
+    <string name="mx_import_target_title">إضافة إلى</string>
+    <string name="mx_import_target_new">مجموعة جديدة</string>
 </resources>

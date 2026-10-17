@@ -9,8 +9,6 @@ import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.ui.res.stringResource
 import com.v2ray.ang.R
 import com.v2ray.ang.ui.compose.DeleteConfirmDialog
-import com.v2ray.ang.ui.compose.InputDialog
-import com.v2ray.ang.ui.compose.InputField
 
 data class ServerDeleteTarget(
     val guid: String,
@@ -70,20 +68,37 @@ fun MainDialogs(
     }
 }
 
-/** Matixray: asks for the name of the group that configs the user just added go to. */
+/** Matixray: asks where configs the user just added go: a new group (named here) or a group they already have. */
 @Composable
 fun ImportNameDialog(
-    onConfirm: (String) -> Unit,
+    groups: List<com.v2ray.ang.dto.GroupMapItem>,
+    onConfirm: (name: String, targetGroupId: String?) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
-    InputDialog(
-        title = stringResource(R.string.mx_import_name_title),
-        fields = listOf(InputField(label = stringResource(R.string.mx_import_name_hint), value = name, singleLine = true)),
-        onFieldChange = { _, value -> name = value },
-        confirmText = stringResource(R.string.mx_import_name_ok),
-        dismissText = stringResource(android.R.string.cancel),
-        onConfirm = { onConfirm(name) },
-        onDismiss = onDismiss,
+    var target by rememberSaveable { mutableStateOf<String?>(null) }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { androidx.compose.material3.Text(stringResource(R.string.mx_import_name_title)) },
+        text = {
+            ImportTargetPicker(
+                groups = groups,
+                targetId = target,
+                onTargetChange = { target = it },
+                name = name,
+                onNameChange = { name = it },
+            )
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = { onConfirm(name, target) }) {
+                androidx.compose.material3.Text(stringResource(R.string.mx_import_name_ok))
+            }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) {
+                androidx.compose.material3.Text(stringResource(android.R.string.cancel))
+            }
+        },
+        containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface,
     )
 }

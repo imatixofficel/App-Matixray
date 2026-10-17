@@ -72,4 +72,12 @@
     <string name="mx_import_name_title">新群組名稱</string>
     <string name="mx_import_name_hint">群組名稱</string>
     <string name="mx_import_name_ok">新增</string>
+    <string name="mx_group_delete">刪除群組「%1$s」</string>
+    <string name="mx_group_delete_confirm">此群組及其中所有設定將被刪除，其他群組不受影響。</string>
+    <string name="mx_group_deleted">群組已刪除</string>
+    <string name="mx_fetch_kept">保留 %1$d 個可用設定，刪除 %2$d 個無回應設定</string>
+    <string name="mx_fetch_only_working_title">僅保留可用設定</string>
+    <string name="mx_fetch_only_working_hint">點擊「取得設定」後，每個下載的設定都會進行真實連線測試。只有能回應的設定才會加入免費群組，失效的會被自動刪除。這會多花一點時間，但清單中只有可用的設定。</string>
+    <string name="mx_import_target_title">新增到</string>
+    <string name="mx_import_target_new">新增群組</string>
 </resources>

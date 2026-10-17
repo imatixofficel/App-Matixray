@@ -72,4 +72,12 @@
     <string name="mx_import_name_title">নতুন গ্রুপের নাম</string>
     <string name="mx_import_name_hint">গ্রুপের নাম</string>
     <string name="mx_import_name_ok">যোগ করুন</string>
+    <string name="mx_group_delete">গ্রুপ “%1$s” মুছুন</string>
+    <string name="mx_group_delete_confirm">এই গ্রুপ এবং এর ভেতরের সব কনফিগ মুছে যাবে। আপনার অন্য গ্রুপগুলো অপরিবর্তিত থাকবে।</string>
+    <string name="mx_group_deleted">গ্রুপ মুছে ফেলা হয়েছে</string>
+    <string name="mx_fetch_kept">%1$dটি কার্যকর কনফিগ রাখা হয়েছে, সাড়া না দেওয়া %2$dটি মুছে ফেলা হয়েছে</string>
+    <string name="mx_fetch_only_working_title">শুধু কার্যকর কনফিগ রাখুন</string>
+    <string name="mx_fetch_only_working_hint">“কনফিগ আনুন” চাপার পর প্রতিটি কনফিগ বাস্তব সংযোগ পরীক্ষায় যাচাই করা হয়। যেগুলো সাড়া দেয় শুধু সেগুলোই ফ্রি গ্রুপে যোগ হয়, বাকিগুলো স্বয়ংক্রিয়ভাবে মুছে যায়। এতে একটু বেশি সময় লাগে, কিন্তু তালিকায় শুধু কার্যকর কনফিগ থাকে।</string>
+    <string name="mx_import_target_title">যোগ করুন</string>
+    <string name="mx_import_target_new">নতুন গ্রুপ</string>
 </resources>

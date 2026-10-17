@@ -92,7 +92,7 @@
     <string name="mx_selected_server_none">No server selected</string>
     <string name="mx_selected_server_hint">Tap to change the server</string>
     <string name="mx_auto_switch_title">Auto-connect to the best server</string>
-    <string name="mx_auto_switch_hint">If the server drops, connect to the best server</string>
+    <string name="mx_auto_switch_hint">If the connection to the current server drops or stops responding, the app automatically switches to the best working server from your list, so you stay connected without doing anything.</string>
     <string name="mx_badge_new">New</string>
     <!-- Matixray: three-tab home, first-run tour, Xfinder subscription -->
     <string name="mx_nav_configs">Configs</string>
@@ -178,4 +178,12 @@
     <string name="mx_import_name_title">Name of the new group</string>
     <string name="mx_import_name_hint">Group name</string>
     <string name="mx_import_name_ok">Add</string>
+    <string name="mx_group_delete">Delete group “%1$s”</string>
+    <string name="mx_group_delete_confirm">This group and all configs inside it will be deleted. Your other groups are not affected.</string>
+    <string name="mx_group_deleted">Group deleted</string>
+    <string name="mx_fetch_kept">Kept %1$d working configs, removed %2$d that did not respond</string>
+    <string name="mx_fetch_only_working_title">Keep only working configs</string>
+    <string name="mx_fetch_only_working_hint">After “Get configs” every downloaded config is tested with a real connection test. Only the ones that respond are added to the Free group; dead ones are deleted automatically. This takes a little longer, but the list contains only configs that work.</string>
+    <string name="mx_import_target_title">Add to</string>
+    <string name="mx_import_target_new">New group</string>
 </resources>

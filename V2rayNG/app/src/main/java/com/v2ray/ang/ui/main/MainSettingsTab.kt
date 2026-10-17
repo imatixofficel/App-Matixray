@@ -81,6 +81,8 @@ fun MainSettingsTab(
     speed: TrafficSpeed,
     autoSwitch: Boolean,
     onAutoSwitchChange: (Boolean) -> Unit,
+    fetchOnlyWorking: Boolean,
+    onFetchOnlyWorkingChange: (Boolean) -> Unit,
     updateAvailable: Boolean,
     onNavigate: (MainDestination) -> Unit,
     tour: TourState,
@@ -143,8 +145,17 @@ fun MainSettingsTab(
                 SwitchRow(
                     iconRes = R.drawable.ic_flash_on_24dp,
                     label = stringResource(R.string.mx_auto_switch_title),
+                    hint = stringResource(R.string.mx_auto_switch_hint),
                     checked = autoSwitch,
                     onCheckedChange = onAutoSwitchChange,
+                )
+                RowDivider()
+                SwitchRow(
+                    iconRes = R.drawable.ic_cloud_download_24dp,
+                    label = stringResource(R.string.mx_fetch_only_working_title),
+                    hint = stringResource(R.string.mx_fetch_only_working_hint),
+                    checked = fetchOnlyWorking,
+                    onCheckedChange = onFetchOnlyWorkingChange,
                 )
                 RowDivider()
                 LinkRow(
@@ -290,7 +301,13 @@ private fun InfoRow(@DrawableRes iconRes: Int, label: String, value: String) {
 }
 
 @Composable
-private fun SwitchRow(@DrawableRes iconRes: Int, label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+private fun SwitchRow(
+    @DrawableRes iconRes: Int,
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    hint: String? = null,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -301,14 +318,22 @@ private fun SwitchRow(@DrawableRes iconRes: Int, label: String, checked: Boolean
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         RowIcon(iconRes)
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f),
-            maxLines = 2,
-        )
+        Column(modifier = Modifier.weight(1f).padding(vertical = 4.dp)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            // The whole explanation is shown, on as many lines as it needs.
+            if (hint != null) {
+                Text(
+                    text = hint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
         Switch(
             checked = checked,
             onCheckedChange = null,

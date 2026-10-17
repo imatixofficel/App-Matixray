@@ -72,4 +72,12 @@
     <string name="mx_import_name_title">نوم گروه تازه</string>
     <string name="mx_import_name_hint">نوم گروه</string>
     <string name="mx_import_name_ok">ایزونی</string>
+    <string name="mx_group_delete">حذف گروه «%1$s»</string>
+    <string name="mx_group_delete_confirm">این گروه و همهٔ کانفیگ‌ای تو دلش حذف بوئه. گروه‌ای دیگه‌ت تغییر نیکنن.</string>
+    <string name="mx_group_deleted">گروه حذف بی</string>
+    <string name="mx_fetch_kept">%1$d کانفیگ سالم موند و %2$d کانفیگ بی‌جواب حذف بی</string>
+    <string name="mx_fetch_only_working_title">فقط کانفیگ‌ای سالم نگه داشته بو</string>
+    <string name="mx_fetch_only_working_hint">پس از «گرتن کانفیگ»، همهٔ کانفیگ‌ای گرته‌بی با تست اتصال واقعی امتحان بونن. فقط اونایی که جواب دَن وارد گروه رایگان بونن و بقیه خودکار پاک بونن. یه خرده بیشتر طول کشه، ولی تو لیست فقط کانفیگ‌ای کارکن هسن.</string>
+    <string name="mx_import_target_title">اضافه کردن به</string>
+    <string name="mx_import_target_new">گروه تازه</string>
 </resources>

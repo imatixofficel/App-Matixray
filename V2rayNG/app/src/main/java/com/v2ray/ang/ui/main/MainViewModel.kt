@@ -164,6 +164,18 @@ class MainViewModel(
     // two failed probes in a row start the same real-ping search as the auto-connect button.
     private val _autoSwitch = MutableStateFlow(MmkvManager.decodeSettingsBool(AppConfig.PREF_AUTO_SWITCH_ON_DROP, false))
     val autoSwitch: StateFlow<Boolean> = _autoSwitch.asStateFlow()
+
+    // Matixray: "get configs" tests each config first and keeps only the working ones.
+    private val _fetchOnlyWorking = MutableStateFlow(MmkvManager.decodeSettingsBool(AppConfig.PREF_FETCH_ONLY_WORKING, true))
+    val fetchOnlyWorking: StateFlow<Boolean> = _fetchOnlyWorking.asStateFlow()
+
+    fun setFetchOnlyWorking(enabled: Boolean) {
+        _fetchOnlyWorking.value = enabled
+        MmkvManager.encodeSettings(AppConfig.PREF_FETCH_ONLY_WORKING, enabled)
+    }
+
+    /** True from the end of a "get configs" download until its tests finish and the dead configs are removed. */
+    private var purgeDeadAfterTests = false
     private val _updateAvailable = MutableStateFlow(false)
     val updateAvailable: StateFlow<Boolean> = _updateAvailable.asStateFlow()
     private var probeFailStreak = 0
@@ -555,7 +567,8 @@ class MainViewModel(
             is MainAction.RemoveServer -> removeServerAndRefresh(action.guid)
             is MainAction.MoveServer -> moveServer(action.groupId, action.fromGuid, action.toGuid)
             is MainAction.Search -> filterConfig(action.query)
-            is MainAction.ImportBatchConfig -> importBatchConfig(action.configText, action.groupName)
+            is MainAction.ImportBatchConfig -> importBatchConfig(action.configText, action.groupName, action.targetGroupId)
+            is MainAction.RemoveGroup -> removeGroup(action.groupId)
             MainAction.DismissImportNaming -> _uiState.update { it.copy(pendingImport = null) }
             is MainAction.RefreshGroup -> refreshGroup(action.groupId)
             MainAction.LocateHandled -> consumeLocateTarget()
@@ -852,12 +865,12 @@ class MainViewModel(
     }
 
     // ---------- Business actions (coroutine-based) ----------
-    private fun importBatchConfig(configText: String, groupName: String?) {
+    private fun importBatchConfig(configText: String, groupName: String?, targetGroupId: String?) {
         // Matixray: configs the user adds never go under "Default": they get a group of their own, named by the user.
         // Only links of subscriptions keep the way they had (a group made from the link itself).
         val onlySubscriptionLinks = configText.lines().map { it.trim() }.filter { it.isNotEmpty() }
             .let { lines -> lines.isNotEmpty() && lines.all { Utils.isValidSubUrl(it) } }
-        if (groupName == null && !onlySubscriptionLinks) {
+        if (groupName == null && targetGroupId == null && !onlySubscriptionLinks) {
             _uiState.update { it.copy(pendingImport = configText) }
             return
         }
@@ -866,18 +879,19 @@ class MainViewModel(
             withContext(ioDispatcher) {
                 var madeGroup: String? = null
                 try {
-                    val target = if (groupName != null && !onlySubscriptionLinks) {
-                        dataSource.createLocalGroup(
-                            groupName.trim().ifEmpty { dataSource.getString(R.string.mx_group_mine) }
+                    val target = when {
+                        onlySubscriptionLinks -> uiState.value.selectedGroupId
+                        targetGroupId != null -> targetGroupId
+                        else -> dataSource.createLocalGroup(
+                            (groupName ?: "").trim().ifEmpty { dataSource.getString(R.string.mx_group_mine) }
                         ).also { madeGroup = it }
-                    } else {
-                        uiState.value.selectedGroupId
                     }
+                    val movesSelection = !onlySubscriptionLinks && target != uiState.value.selectedGroupId
                     val (count, countSub) = dataSource.importBatchConfig(configText, target, true)
                     when {
                         count > 0 -> {
                             toast(dataSource.getString(R.string.title_import_config_count, count))
-                            if (madeGroup != null) {
+                            if (movesSelection) {
                                 dataSource.setSelectedSubscriptionId(target)
                                 _uiState.update { it.copy(selectedGroupId = target) }
                             }
@@ -896,6 +910,27 @@ class MainViewModel(
                 } catch (e: Exception) {
                     madeGroup?.let { dataSource.removeGroup(it) }
                     LogUtil.e(AppConfig.TAG, "Failed to import batch config", e)
+                    toastError(R.string.toast_failure)
+                }
+            }
+        }
+    }
+
+    /** Matixray: the delete button of a group card; the Default group is never removed. */
+    private fun removeGroup(groupId: String) {
+        if (groupId.isEmpty() || groupId == AppConfig.DEFAULT_SUBSCRIPTION_ID) return
+        launchLoading {
+            withContext(ioDispatcher) {
+                try {
+                    dataSource.removeGroup(groupId)
+                    toast(dataSource.getString(R.string.mx_group_deleted))
+                    cacheMutex.withLock { groupDataCache.clear() }
+                    setupGroupTab(forceRefresh = true).join()
+                    refreshSelectedGuid()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (e: Exception) {
+                    LogUtil.e(AppConfig.TAG, "Failed to remove group", e)
                     toastError(R.string.toast_failure)
                 }
             }
@@ -1064,6 +1099,7 @@ class MainViewModel(
                 testAllRealPing()
                 _fetchState.value = ConfigFetchState(FetchPhase.Testing, done, sources.size, added)
                 sortAfterTests = true
+                purgeDeadAfterTests = _fetchOnlyWorking.value
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (e: Exception) {
@@ -1405,6 +1441,7 @@ class MainViewModel(
     fun cancelAllPing() {
         autoConnectPending = false
         sortAfterTests = false
+        purgeDeadAfterTests = false
         if (_fetchState.value.phase == FetchPhase.Testing) _fetchState.value = ConfigFetchState()
         bulkTestJob?.cancel()
         bulkTestJob = null
@@ -1494,10 +1531,33 @@ class MainViewModel(
         resetTestStatus()
         finishAutoConnect()
         if (sortAfterTests) {
-            // The "get configs" run: the fresh configs are tested, now the best go first.
+            // The "get configs" run: the fresh configs are tested; the ones that did not answer are removed (when the
+            // setting asks for it) before they ever show in the list, then the best go first.
             sortAfterTests = false
-            _fetchState.value = ConfigFetchState()
-            sortByTestResultsAsync()
+            val purge = purgeDeadAfterTests
+            purgeDeadAfterTests = false
+            viewModelScope.launch(ioDispatcher) {
+                try {
+                    if (purge) {
+                        val freeId = AppConfig.FREE_SUBSCRIPTION_ID
+                        val before = dataSource.getServerGuidList(freeId)
+                        before.filter { (dataSource.decodeAffiliationInfo(it)?.testDelayMillis ?: 0L) <= 0L }
+                            .forEach { dataSource.removeServer(it) }
+                        val kept = dataSource.getServerGuidList(freeId).size
+                        toast(dataSource.getString(R.string.mx_fetch_kept, kept, before.size - kept))
+                    }
+                    cacheMutex.withLock { groupDataCache.clear() }
+                    setupGroupTab(forceRefresh = true).join()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (e: Exception) {
+                    LogUtil.e(AppConfig.TAG, "Removing the dead fetched configs failed", e)
+                } finally {
+                    // The list shows the free group again only now.
+                    _fetchState.value = ConfigFetchState()
+                }
+                sortByTestResultsAsync()
+            }
         }
         viewModelScope.launch(ioDispatcher) {
             cacheMutex.withLock { groupDataCache.clear() }
@@ -1562,8 +1622,8 @@ class MainViewModel(
 
     companion object {
         /** Matixray: limits of one "get configs" run, so the list and the tests that follow stay small. */
-        private const val MAX_FETCH_TOTAL = 250
-        private const val MAX_FETCH_PER_SOURCE = 40
+        private const val MAX_FETCH_TOTAL = 400
+        private const val MAX_FETCH_PER_SOURCE = 60
         private const val FETCH_REFRESH_MS = 700L
 
         /** Matixray: the update check on start runs once per process, not once per screen. */

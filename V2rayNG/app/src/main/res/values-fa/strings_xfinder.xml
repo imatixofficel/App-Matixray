@@ -62,7 +62,7 @@
     <string name="mx_selected_server_none">سروری انتخاب نشده</string>
     <string name="mx_selected_server_hint">برای تغییر سرور بزنید</string>
     <string name="mx_auto_switch_title">اتصال خودکار به بهترین سرور</string>
-    <string name="mx_auto_switch_hint">اگر سرور قطع شد، به بهترین سرور وصل می‌شود</string>
+    <string name="mx_auto_switch_hint">اگر اتصال به سرور فعلی قطع شود یا پاسخ ندهد، برنامه خودکار به بهترین سرور سالم لیست شما وصل می‌شود تا بدون هیچ کاری متصل بمانید.</string>
     <string name="mx_badge_new">جدید</string>
     <!-- Matixray: three-tab home, first-run tour, Xfinder subscription -->
     <string name="mx_nav_configs">کانفیگ‌ها</string>
@@ -145,4 +145,12 @@
     <string name="mx_import_name_title">نام گروه جدید</string>
     <string name="mx_import_name_hint">نام گروه</string>
     <string name="mx_import_name_ok">افزودن</string>
+    <string name="mx_group_delete">حذف گروه «%1$s»</string>
+    <string name="mx_group_delete_confirm">این گروه و همهٔ کانفیگ‌های داخل آن حذف می‌شود. بقیهٔ گروه‌های شما تغییری نمی‌کنند.</string>
+    <string name="mx_group_deleted">گروه حذف شد</string>
+    <string name="mx_fetch_kept">%1$d کانفیگ سالم نگه داشته شد و %2$d کانفیگ بدون پاسخ حذف شد</string>
+    <string name="mx_fetch_only_working_title">فقط کانفیگ‌های سالم نگه داشته شود</string>
+    <string name="mx_fetch_only_working_hint">بعد از «دریافت کانفیگ»، همهٔ کانفیگ‌های دریافتی با تست اتصال واقعی آزمایش می‌شوند. فقط آن‌هایی که پاسخ می‌دهند وارد گروه رایگان می‌شوند و بقیه خودکار پاک می‌شوند. این کار کمی بیشتر طول می‌کشد، اما در لیست فقط کانفیگ‌هایی هستند که کار می‌کنند.</string>
+    <string name="mx_import_target_title">افزودن به</string>
+    <string name="mx_import_target_new">گروه جدید</string>
 </resources>
