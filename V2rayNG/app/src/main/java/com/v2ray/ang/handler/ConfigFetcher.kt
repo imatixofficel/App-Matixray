@@ -1,8 +1,6 @@
 package com.v2ray.ang.handler
 
 import com.v2ray.ang.AppConfig
-import com.v2ray.ang.dto.UrlContentRequest
-import com.v2ray.ang.util.HttpUtil
 import com.v2ray.ang.util.LogUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -12,7 +10,11 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import okhttp3.ConnectionPool
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.util.Base64
+import java.util.concurrent.TimeUnit
 
 /**
  * One public list of share links the "get configs" button reads. [isps] names the internet providers the list is meant
@@ -101,26 +103,36 @@ object ConfigLinkParser {
     private val schemes = listOf("vless://", "vmess://", "trojan://", "ss://", "hysteria2://", "hy2://")
     private const val MAX_LINK_LENGTH = 4000
 
-    fun extractLinks(body: String?): List<String> {
+    /**
+     * @param truncated true when [body] is only the first part of a longer list: the last line may be cut in the
+     * middle, so it is dropped rather than imported as a broken link.
+     */
+    fun extractLinks(body: String?, truncated: Boolean = false): List<String> {
         if (body.isNullOrBlank()) return emptyList()
-        val direct = linksIn(body)
+        val direct = linksIn(body, truncated)
         if (direct.isNotEmpty()) return direct
-        val decoded = decodeBase64(body) ?: return emptyList()
-        return linksIn(decoded)
+        val decoded = decodeBase64(body, truncated) ?: return emptyList()
+        return linksIn(decoded, truncated)
     }
 
-    private fun linksIn(text: String): List<String> =
-        text.lineSequence()
-            .map { it.trim() }
+    private fun linksIn(text: String, truncated: Boolean = false): List<String> {
+        val lines = text.lineSequence().map { it.trim() }.toList()
+        val complete = if (truncated && lines.isNotEmpty()) lines.dropLast(1) else lines
+        return complete
             .filter { line ->
                 line.length in 12..MAX_LINK_LENGTH && schemes.any { line.startsWith(it, ignoreCase = true) }
             }
             .distinct()
-            .toList()
+    }
 
-    private fun decodeBase64(input: String): String? {
-        val clean = input.trim().replace('-', '+').replace('_', '/')
+    private fun decodeBase64(input: String, truncated: Boolean = false): String? {
+        var clean = input.trim().replace('-', '+').replace('_', '/')
         if (clean.isEmpty()) return null
+        if (truncated) {
+            // A cut list ends in the middle of a 4-character group: keep only the whole groups.
+            clean = clean.filter { it.isLetterOrDigit() || it == '+' || it == '/' || it == '=' }
+            clean = clean.substring(0, clean.length - clean.length % 4)
+        }
         return try {
             String(Base64.getMimeDecoder().decode(clean), Charsets.UTF_8)
         } catch (e: IllegalArgumentException) {
@@ -134,8 +146,27 @@ object ConfigLinkParser {
  * over as soon as that source is read, so the first answers are used while slow or dead sources are still waiting.
  */
 object ConfigFetcher {
-    private const val TIMEOUT_MS = 8_000
-    private const val PARALLEL_SOURCES = 16
+    private const val TIMEOUT_MS = 8_000L
+    /** All the sources start at once: they are small requests, and most of them are on the same few hosts. */
+    private const val PARALLEL_SOURCES = 48
+    /** Only the first part of a list is read: 80 links per source are enough, and a few huge lists never slow the run. */
+    private const val MAX_BODY_BYTES = 2L * 1024 * 1024
+
+    /**
+     * One client for every source, so connections are reused (HTTP/2 to the same host carries many lists at once)
+     * instead of opening and closing a connection per list.
+     */
+    private val client: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(5, TimeUnit.SECONDS)
+            .readTimeout(6, TimeUnit.SECONDS)
+            .callTimeout(TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .retryOnConnectionFailure(true)
+            .connectionPool(ConnectionPool(PARALLEL_SOURCES, 60, TimeUnit.SECONDS))
+            .build()
+    }
 
     /** How many shuffled links of one source are offered to the importer; the importer stops at its own limits. */
     const val CANDIDATES_PER_SOURCE = 80
@@ -162,13 +193,26 @@ object ConfigFetcher {
             }
         } finally {
             scope.cancel()
+            // Downloads still running are cut at once instead of holding a thread until their timeout.
+            client.dispatcher.cancelAll()
         }
     }
 
     private fun download(source: ConfigSource): List<String> {
         return try {
-            val body = HttpUtil.getUrlContent(UrlContentRequest(url = source.url, timeout = TIMEOUT_MS))
-            ConfigLinkParser.extractLinks(body).shuffled().take(CANDIDATES_PER_SOURCE)
+            val request = Request.Builder().url(source.url).get().build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    LogUtil.w(AppConfig.TAG, "Config source ${source.name}: HTTP ${response.code}")
+                    return emptyList()
+                }
+                val src = response.body.source()
+                val truncated = src.request(MAX_BODY_BYTES + 1)
+                val bytes = src.buffer.readByteArray(minOf(src.buffer.size, MAX_BODY_BYTES))
+                ConfigLinkParser.extractLinks(String(bytes, Charsets.UTF_8), truncated)
+                    .shuffled()
+                    .take(CANDIDATES_PER_SOURCE)
+            }
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "Config source failed: ${source.name}", e)
             emptyList()

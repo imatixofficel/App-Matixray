@@ -1,6 +1,20 @@
 package com.v2ray.ang.ui
 
 import android.content.Intent
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.border
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -215,34 +229,74 @@ private fun TelegramButton(onClick: () -> Unit) {
 }
 
 
-/** Matixray: "In the name of God" opens the About page, in large gradient lettering between two thin shining lines. */
+/**
+ * Matixray: "In the name of God" opens the About page inside a glass frame with a shining gradient edge. The lettering is
+ * big, with a soft glow, and its colors slowly drift from side to side; a small ornament between two fading lines sits
+ * above and below it.
+ */
 @Composable
 private fun AboutBismillah() {
     val scheme = MaterialTheme.colorScheme
-    val brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
-        listOf(scheme.primary, androidx.compose.ui.graphics.Color(0xFF8B5CF6), androidx.compose.ui.graphics.Color(0xFF2DD4BF))
+    val violet = Color(0xFF8B5CF6)
+    val teal = Color(0xFF2DD4BF)
+    val gold = Color(0xFFF5C26B)
+    val shape = RoundedCornerShape(28.dp)
+
+    // The colors of the lettering and of the frame move slowly, so the title seems to shine.
+    val drift by rememberInfiniteTransition(label = "bismillahDrift").animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(6000, easing = LinearEasing), RepeatMode.Reverse),
+        label = "bismillahDriftValue",
     )
-    val line = androidx.compose.ui.graphics.Brush.horizontalGradient(
-        listOf(androidx.compose.ui.graphics.Color.Transparent, scheme.primary.copy(alpha = 0.7f), androidx.compose.ui.graphics.Color.Transparent)
+    val textBrush = Brush.linearGradient(
+        colors = listOf(scheme.primary, violet, teal, gold),
+        start = Offset(-300f + 600f * drift, 0f),
+        end = Offset(600f + 600f * drift, 120f),
+        tileMode = TileMode.Mirror,
     )
-    androidx.compose.foundation.layout.Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
-        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+    val frameBrush = Brush.sweepGradient(listOf(scheme.primary, violet, teal, gold, scheme.primary))
+    val fadingLine = Brush.horizontalGradient(
+        listOf(Color.Transparent, scheme.primary.copy(alpha = 0.75f), Color.Transparent)
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 14.dp)
+            .liquidGlass(shape)
+            .border(1.5.dp, frameBrush, shape)
+            .padding(horizontal = 20.dp, vertical = 22.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        androidx.compose.foundation.layout.Box(
-            modifier = Modifier.fillMaxWidth(0.7f).height(2.dp).background(line)
-        )
-        androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
-        Text(
-            text = stringResource(R.string.xf_splash_title),
-            style = MaterialTheme.typography.headlineMedium.copy(brush = brush),
-            fontWeight = FontWeight.ExtraBold,
-            letterSpacing = 1.sp,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-        )
-        androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
-        androidx.compose.foundation.layout.Box(
-            modifier = Modifier.fillMaxWidth(0.7f).height(2.dp).background(line)
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            BismillahOrnament(fadingLine, gold, "\u2726")
+            Spacer(Modifier.height(14.dp))
+            Text(
+                text = stringResource(R.string.xf_splash_title),
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    brush = textBrush,
+                    shadow = Shadow(color = scheme.primary.copy(alpha = 0.40f), offset = Offset(0f, 2f), blurRadius = 22f),
+                ),
+                fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(14.dp))
+            BismillahOrnament(fadingLine, violet, "\u2756")
+        }
+    }
+}
+
+/** Two fading lines with a small star between them. */
+@Composable
+private fun BismillahOrnament(line: Brush, color: Color, glyph: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(0.8f),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(modifier = Modifier.weight(1f).height(1.5.dp).background(line))
+        Text(text = glyph, color = color, fontSize = 14.sp)
+        Box(modifier = Modifier.weight(1f).height(1.5.dp).background(line))
     }
 }

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -372,6 +373,7 @@ fun MainQuickActions(
         FetchPhase.Idle -> null
     }
     Surface(modifier = modifier.fillMaxWidth(), color = scheme.surface) {
+      Column {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -419,6 +421,55 @@ fun MainQuickActions(
                 modifier = Modifier.weight(1f),
             )
         }
+        FetchProgressBar(fetch)
+      }
+    }
+}
+
+/**
+ * Matixray: the bar under the quick buttons while "get configs" runs. It fills as the sources answer (so the user sees
+ * how much is still to come and when the download ends), shows the percentage and how many configs were added, and
+ * turns into a running bar for the quick check and the tests that follow, whose length is not known.
+ */
+@Composable
+private fun FetchProgressBar(fetch: ConfigFetchState) {
+    if (!fetch.busy) return
+    val scheme = MaterialTheme.colorScheme
+    val downloading = fetch.phase == FetchPhase.Downloading && fetch.sourcesTotal > 0 && fetch.sourcesDone < fetch.sourcesTotal
+    val target = if (fetch.sourcesTotal > 0) fetch.sourcesDone.toFloat() / fetch.sourcesTotal else 0f
+    val progress by animateFloatAsState(target.coerceIn(0f, 1f), label = "fetchProgress")
+    val barModifier = Modifier
+        .fillMaxWidth()
+        .height(6.dp)
+        .clip(RoundedCornerShape(3.dp))
+    val caption = when {
+        downloading -> stringResource(R.string.mx_fetch_bar, (target * 100).toInt(), fetch.sourcesDone, fetch.sourcesTotal, fetch.added)
+        fetch.phase == FetchPhase.Downloading -> stringResource(R.string.mx_fetch_checking, fetch.added)
+        else -> stringResource(R.string.mx_fetch_testing)
+    }
+    Column(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 2.dp)) {
+        if (downloading) {
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = barModifier,
+                color = scheme.primary,
+                trackColor = scheme.surfaceContainerHighest,
+            )
+        } else {
+            LinearProgressIndicator(
+                modifier = barModifier,
+                color = scheme.primary,
+                trackColor = scheme.surfaceContainerHighest,
+            )
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = caption,
+            style = MaterialTheme.typography.labelSmall,
+            color = scheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

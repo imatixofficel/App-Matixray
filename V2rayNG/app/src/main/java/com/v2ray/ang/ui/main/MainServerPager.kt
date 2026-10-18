@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -75,6 +76,7 @@ import com.v2ray.ang.R
 import com.v2ray.ang.dto.GroupMapItem
 import com.v2ray.ang.dto.LocateTarget
 import com.v2ray.ang.dto.entities.ProfileItem
+import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.ui.compose.ReorderableGridItem
 import com.v2ray.ang.ui.compose.ReorderableListItem
 import com.v2ray.ang.ui.compose.colorConfigType
@@ -335,6 +337,20 @@ private fun Modifier.verticalText(): Modifier = this
     }
     .rotate(-90f)
 
+/**
+ * The word written upward on the strip of a card. The strip is as tall as the card, so the long names (SHADOWSOCKS,
+ * HYSTERIA2, WIREGUARD, POLICYGROUP, PROXYCHAIN) were cut off; they are shortened to what fits.
+ */
+private fun protocolStripLabel(type: EConfigType): String = when (type) {
+    EConfigType.SHADOWSOCKS -> "SS"
+    EConfigType.HYSTERIA2 -> "HY2"
+    EConfigType.HYSTERIA -> "HY"
+    EConfigType.WIREGUARD -> "WG"
+    EConfigType.POLICYGROUP -> "GROUP"
+    EConfigType.PROXYCHAIN -> "CHAIN"
+    else -> type.name
+}
+
 private val pingGoodText = Color(0xFF0B5D1E)
 private val pingGoodBg = Color(0xFF93E39A)
 private val pingMidText = Color(0xFF6B4A00)
@@ -388,7 +404,7 @@ private fun ServerListItem(
     }
     val outer = RoundedCornerShape(16.dp)
     val inner = RoundedCornerShape(12.dp)
-    val protocol = row.profile.configType.name
+    val protocol = protocolStripLabel(row.profile.configType)
     val mainColor = if (isSelected) ConfigInk else scheme.onSurface
     val subColor = if (isSelected) ConfigInk.copy(alpha = 0.65f) else scheme.onSurfaceVariant
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
@@ -396,7 +412,9 @@ private fun ServerListItem(
             modifier = Modifier
                 .padding(horizontal = 14.dp, vertical = 4.dp)
                 .fillMaxWidth()
-                .height(76.dp)
+                // At least 76 dp, taller when the name wraps or the font is enlarged: a fixed height cut the text off.
+                .heightIn(min = 76.dp)
+                .height(IntrinsicSize.Min)
                 .clip(outer)
                 .background(scheme.surfaceContainerHigh)
                 .semantics {

@@ -278,14 +278,28 @@ class MainViewModel(
         }
     }
 
+    /** True while the status line says "connected, but no internet" because the background probes keep failing. */
+    private var noInternetShown = false
+
     private fun onProbeResult(delayMillis: Long) {
         if (delayMillis >= 0L) {
             probeFailStreak = 0
+            if (noInternetShown) {
+                noInternetShown = false
+                _uiState.update { if (it.isRunning && it.status is MainStatus.Connecting) it.copy(status = MainStatus.Connected) else it }
+            }
             return
         }
         // The first 30 s after a start or a switch are not judged: the tunnel may still be coming up.
         if (System.currentTimeMillis() - lastAutoSwitchAtMs < 30_000L) return
         probeFailStreak++
+        // "Connected" only means the core started. When the probes through the tunnel keep failing, say so instead of
+        // leaving the user with a green button and a dead connection.
+        if (probeFailStreak >= 2 && _uiState.value.isRunning && _uiState.value.status is MainStatus.Connected) {
+            noInternetShown = true
+            val message = dataSource.getString(R.string.mx_no_internet)
+            _uiState.update { it.copy(status = MainStatus.Connecting(message)) }
+        }
         if (_autoSwitch.value && probeFailStreak >= 2 && !autoConnectPending) {
             probeFailStreak = 0
             lastAutoSwitchAtMs = System.currentTimeMillis()
@@ -1713,6 +1727,8 @@ class MainViewModel(
             pingJob?.cancel()
             pingJob = null
             silentProbeIds.clear()
+            noInternetShown = false
+            probeFailStreak = 0
         }
         _uiState.update { state ->
             state.copy(
@@ -1745,7 +1761,7 @@ class MainViewModel(
         private const val TCP_PRECHECK_PARALLEL = 60
         /** How many configs go on to the real test after the quick check: the ones that answered fastest. */
         private const val REAL_TEST_MAX = 60
-        private const val TCP_PRECHECK_TIMEOUT_MS = 1000
+        private const val TCP_PRECHECK_TIMEOUT_MS = 1500
         /** The download stops waiting for slow sources once this many configs are in. */
         private const val ENOUGH_CANDIDATES = 140
         private const val AUTO_FETCH_DELAY_MS = 6_000L

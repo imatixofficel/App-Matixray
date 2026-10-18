@@ -403,7 +403,9 @@ object SettingsManager {
         return if (second) {
             AppConfig.DELAY_TEST_URL2
         } else {
-            MmkvManager.decodeSettingsString(AppConfig.PREF_DELAY_TEST_URL)
+            // A cleared field is stored as "", not removed: it must fall back to the default, or every ping fails.
+            MmkvManager.decodeSettingsString(AppConfig.PREF_DELAY_TEST_URL)?.trim()
+                ?.takeIf { it.isNotEmpty() }
                 ?: AppConfig.DELAY_TEST_URL
         }
     }

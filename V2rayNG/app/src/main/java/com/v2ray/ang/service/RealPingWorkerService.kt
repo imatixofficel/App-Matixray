@@ -60,6 +60,10 @@ class RealPingWorkerService(
     // Names the measurements of this batch in the native core, so that cancel() ends them and no other batch's
     private val batch = UUID.randomUUID().toString()
 
+    private companion object {
+        const val TCP_PRECHECK_TIMEOUT_MS = 3000
+    }
+
     private val runningCount = AtomicInteger(0)
     private val totalCount = AtomicInteger(0)
 
@@ -73,8 +77,13 @@ class RealPingWorkerService(
                     if (scope.isActive) {
                         onEvent(RealPingEvent.Result(guid, result))
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (_: Throwable) {
-                    // ignore
+                    // A failed measurement is a result too: report it, or the card never leaves its "testing" state.
+                    if (scope.isActive) {
+                        onEvent(RealPingEvent.Result(guid, -1L))
+                    }
                 } finally {
                     val count = totalCount.decrementAndGet()
                     val left = runningCount.decrementAndGet()
@@ -149,7 +158,8 @@ class RealPingWorkerService(
         ) {
             val url = config.server.orEmpty()
             val port = config.serverPort.orEmpty().toInt()
-            val tcpTime = SpeedtestManager.socketConnectTime(url, port, 1000)
+            // 1 s was too short on mobile networks: live servers failed this pre-check and showed no ping.
+            val tcpTime = SpeedtestManager.socketConnectTime(url, port, TCP_PRECHECK_TIMEOUT_MS)
             if (tcpTime <= -1L) {
                 return retFailure
             }
@@ -176,7 +186,7 @@ class RealPingWorkerService(
         ) {
             val url = config.server.orEmpty()
             val port = config.serverPort.orEmpty().toInt()
-            val tcpTime = SpeedtestManager.socketConnectTime(url, port, 1000)
+            val tcpTime = SpeedtestManager.socketConnectTime(url, port, TCP_PRECHECK_TIMEOUT_MS)
 
             return tcpTime
         }

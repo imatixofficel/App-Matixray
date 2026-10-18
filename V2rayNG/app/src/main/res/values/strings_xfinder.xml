@@ -218,4 +218,7 @@
     <string name="mx_update_failed">The update could not be downloaded. Check your connection and try again.</string>
     <string name="mx_update_install">Install</string>
     <string name="mx_stat_duration">Duration</string>
+    <string name="mx_no_internet">Connected, but no internet. Try another config.</string>
+    <string name="mx_fetch_bar">Downloading configs %1$d%% · %2$d/%3$d sources · +%4$d</string>
+    <string name="mx_fetch_checking">Checking servers… %1$d configs found</string>
 </resources>
