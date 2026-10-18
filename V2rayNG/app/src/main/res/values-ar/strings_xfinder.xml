@@ -39,7 +39,7 @@
     <string name="mx_psiphon_state_off">متوقف</string>
     <string name="mx_psiphon_state_on">متصل</string>
     <string name="mx_about_title">حول Matixray</string>
-    <string name="mx_about_body">Matixray نسخة مطوّرة من V2Ray للاتصال السريع والمستقر.\n\n• إعدادات مجانية: بنقرة على «جلب الإعدادات» تُحمَّل قوائم Mahsa NG العامة وتُختبر على اتصالك ويبقى الأسرع منها (نحو 30) في المجموعة المجانية.\n• المجموعات والاشتراكات، Xfinder وماسح IP، والاتصال التلقائي.\n• البروتوكولات: VMess وVLESS وTrojan وShadowsocks وHysteria2 على نواة Xray.\n\nالإعدادات المجانية من قوائم Mahsa NG المفتوحة. انضم إلى قناتنا على تلغرام.</string>
+    <string name="mx_about_body">Matixray نسخة مطوّرة من V2Ray للاتصال السريع والمستقر.\n\n• إعدادات مجانية: بنقرة على «جلب الإعدادات» تُحمَّل قوائم Mahsa NG العامة وتُختبر على اتصالك ويبقى الأسرع منها (نحو 20) في المجموعة المجانية.\n• المجموعات والاشتراكات، Xfinder وماسح IP، والاتصال التلقائي.\n• البروتوكولات: VMess وVLESS وTrojan وShadowsocks وHysteria2 على نواة Xray.\n\nالإعدادات المجانية من قوائم Mahsa NG المفتوحة. انضم إلى قناتنا على تلغرام.</string>
     <string name="mx_telegram_button">انضم إلى قناة تلغرام</string>
     <string name="mx_remove_sni_title">إزالة SNI</string>
     <string name="mx_remove_sni_summary">لا يتم إرسال اسم الخادم (SNI) في اتصالات TLS</string>
@@ -77,7 +77,7 @@
     <string name="mx_group_deleted">تم حذف المجموعة</string>
     <string name="mx_fetch_kept">تم الاحتفاظ بـ %1$d إعدادات تعمل وحذف %2$d لم تستجب</string>
     <string name="mx_fetch_only_working_title">الاحتفاظ بالإعدادات العاملة فقط</string>
-    <string name="mx_fetch_only_working_hint">بعد «جلب الإعدادات» يحمّل التطبيق قوائم Mahsa NG ويستبعد الخوادم التي لا تفتح اتصالًا ثم يختبر الباقي باختبار اتصال حقيقي على شبكتك. يبقى الأسرع منها فقط (نحو 30) ويُحذف الباقي. أوقفه للاحتفاظ بكل ما تم تنزيله.</string>
+    <string name="mx_fetch_only_working_hint">بعد «جلب الإعدادات» يحمّل التطبيق قوائم Mahsa NG ويستبعد الخوادم التي لا تفتح اتصالًا ثم يختبر الباقي باختبار اتصال حقيقي على شبكتك. يبقى الأسرع منها فقط (نحو 20) ويُحذف الباقي. أوقفه للاحتفاظ بكل ما تم تنزيله.</string>
     <string name="mx_import_target_title">إضافة إلى</string>
     <string name="mx_import_target_new">مجموعة جديدة</string>
     <string name="mx_free_badge">مجاني</string>
@@ -105,4 +105,10 @@
     <string name="xf_mix_group_name">عناوين الماسح</string>
     <string name="xf_mix_done">تمت إضافة %1$d إعدادات بعناوين الماسح</string>
     <string name="xf_mix_failed">تعذّر الدمج: استخدم إعداد vless أو vmess أو trojan</string>
+    <string name="mx_auto_fetch_title">تجهيز الإعدادات المجانية تلقائيًا</string>
+    <string name="mx_auto_fetch_hint">عند فتح التطبيق، وكل ثلاث ساعات على الأكثر، تُجلب الإعدادات المجانية وتُختبر بهدوء في الخلفية، فتجد قائمة مختبرة وجاهزة عند الحاجة. تعود المجموعة التي كنت تشاهدها عند الانتهاء. أوقفه لتُجلب فقط عند الضغط على «جلب الإعدادات».</string>
+    <string name="mx_update_downloading">جارٍ تنزيل التحديث… %1$d%%</string>
+    <string name="mx_update_ready">اكتمل التنزيل. جارٍ التثبيت…</string>
+    <string name="mx_update_failed">تعذّر تنزيل التحديث. تحقق من الاتصال وحاول مرة أخرى.</string>
+    <string name="mx_update_install">تثبيت</string>
 </resources>

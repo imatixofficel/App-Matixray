@@ -103,6 +103,8 @@ object AppConfig {
     /** Matixray: "get configs" tests every config first and keeps only the working ones (default on). */
     const val PREF_FETCH_ONLY_WORKING = "pref_fetch_only_working"
     const val PREF_ISP = "pref_isp"
+    const val PREF_AUTO_FETCH = "pref_auto_fetch_free"
+    const val PREF_FREE_LAST_FETCH = "pref_free_last_fetch"
     const val PREF_GLASS_CARDS = "pref_glass_cards"
     /** Matixray: set once the first-run tour was finished or skipped. */
     const val PREF_TUTORIAL_DONE = "pref_tutorial_done"

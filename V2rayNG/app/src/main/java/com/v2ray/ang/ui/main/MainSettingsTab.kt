@@ -89,6 +89,8 @@ fun MainSettingsTab(
     onAutoSwitchChange: (Boolean) -> Unit,
     fetchOnlyWorking: Boolean,
     onFetchOnlyWorkingChange: (Boolean) -> Unit,
+    autoFetch: Boolean,
+    onAutoFetchChange: (Boolean) -> Unit,
     glassCards: Boolean,
     onGlassCardsChange: (Boolean) -> Unit,
     isp: String,
@@ -141,6 +143,14 @@ fun MainSettingsTab(
                     hint = stringResource(R.string.mx_fetch_only_working_hint),
                     checked = fetchOnlyWorking,
                     onCheckedChange = onFetchOnlyWorkingChange,
+                )
+                RowDivider()
+                SwitchRow(
+                    iconRes = R.drawable.ic_cloud_download_24dp,
+                    label = stringResource(R.string.mx_auto_fetch_title),
+                    hint = stringResource(R.string.mx_auto_fetch_hint),
+                    checked = autoFetch,
+                    onCheckedChange = onAutoFetchChange,
                 )
             }
 

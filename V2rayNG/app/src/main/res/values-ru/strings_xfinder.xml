@@ -39,7 +39,7 @@
     <string name="mx_psiphon_state_off">Выкл.</string>
     <string name="mx_psiphon_state_on">Подключено</string>
     <string name="mx_about_title">О Matixray</string>
-    <string name="mx_about_body">Matixray — улучшенная сборка V2Ray для быстрого и стабильного подключения.\n\n• Бесплатные конфигурации: «Получить конфигурации» загружает открытые списки Mahsa NG, проверяет их на вашем соединении и оставляет самые быстрые рабочие (около 30) в бесплатной группе.\n• Группы и подписки, Xfinder и сканер IP, автоподключение.\n• Протоколы: VMess, VLESS, Trojan, Shadowsocks, Hysteria2 на ядре Xray.\n\nБесплатные конфигурации — из открытых списков Mahsa NG. Присоединяйтесь к нашему Telegram-каналу.</string>
+    <string name="mx_about_body">Matixray — улучшенная сборка V2Ray для быстрого и стабильного подключения.\n\n• Бесплатные конфигурации: «Получить конфигурации» загружает открытые списки Mahsa NG, проверяет их на вашем соединении и оставляет самые быстрые рабочие (около 20) в бесплатной группе.\n• Группы и подписки, Xfinder и сканер IP, автоподключение.\n• Протоколы: VMess, VLESS, Trojan, Shadowsocks, Hysteria2 на ядре Xray.\n\nБесплатные конфигурации — из открытых списков Mahsa NG. Присоединяйтесь к нашему Telegram-каналу.</string>
     <string name="mx_telegram_button">Вступить в Telegram-канал</string>
     <string name="mx_remove_sni_title">Удалить SNI</string>
     <string name="mx_remove_sni_summary">В TLS-соединениях имя сервера (SNI) не отправляется</string>
@@ -77,7 +77,7 @@
     <string name="mx_group_deleted">Группа удалена</string>
     <string name="mx_fetch_kept">Оставлено рабочих: %1$d, удалено не ответивших: %2$d</string>
     <string name="mx_fetch_only_working_title">Оставлять только рабочие конфигурации</string>
-    <string name="mx_fetch_only_working_hint">После «Получить конфигурации» приложение загружает списки Mahsa NG, отбрасывает серверы, не открывающие соединение, и проверяет остальные реальным тестом в вашей сети. Остаются только самые быстрые (около 30), остальные удаляются. Выключите, чтобы сохранять всё загруженное.</string>
+    <string name="mx_fetch_only_working_hint">После «Получить конфигурации» приложение загружает списки Mahsa NG, отбрасывает серверы, не открывающие соединение, и проверяет остальные реальным тестом в вашей сети. Остаются только самые быстрые (около 20), остальные удаляются. Выключите, чтобы сохранять всё загруженное.</string>
     <string name="mx_import_target_title">Добавить в</string>
     <string name="mx_import_target_new">Новая группа</string>
     <string name="mx_free_badge">Бесплатно</string>
@@ -105,4 +105,10 @@
     <string name="xf_mix_group_name">IP сканера</string>
     <string name="xf_mix_done">Добавлено конфигураций: %1$d</string>
     <string name="xf_mix_failed">Не удалось: используйте конфигурацию vless, vmess или trojan</string>
+    <string name="mx_auto_fetch_title">Автоподготовка бесплатных конфигураций</string>
+    <string name="mx_auto_fetch_hint">При открытии приложения (не чаще раза в три часа) бесплатные конфигурации тихо загружаются и проверяются в фоне, так что готовый проверенный список ждёт вас. После завершения снова показывается группа, которую вы смотрели. Выключите, чтобы загружать только по кнопке «Получить конфигурации».</string>
+    <string name="mx_update_downloading">Загрузка обновления… %1$d%%</string>
+    <string name="mx_update_ready">Загрузка завершена. Установка…</string>
+    <string name="mx_update_failed">Не удалось загрузить обновление. Проверьте соединение и повторите.</string>
+    <string name="mx_update_install">Установить</string>
 </resources>

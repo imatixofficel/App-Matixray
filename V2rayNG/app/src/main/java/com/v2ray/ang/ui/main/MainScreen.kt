@@ -133,6 +133,7 @@ fun MainScreen(
     var groupToDelete by remember { mutableStateOf<com.v2ray.ang.dto.GroupMapItem?>(null) }
     val fetchOnlyWorking by mainViewModel.fetchOnlyWorking.collectAsStateWithLifecycle()
     val glassCards by mainViewModel.glassCards.collectAsStateWithLifecycle()
+    val autoFetch by mainViewModel.autoFetch.collectAsStateWithLifecycle()
     val isp by mainViewModel.isp.collectAsStateWithLifecycle()
     // Matixray: configs added by hand never go under "Default": they get a new group named by the user; links of
     // subscriptions keep their own way (a group made from the link).
@@ -186,22 +187,10 @@ fun MainScreen(
     }
 
     uiState.updateNotice?.let { notice ->
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { onAction(MainAction.DismissUpdateNotice) },
-            title = { Text(stringResource(R.string.mx_update_notice_title)) },
-            text = { Text(stringResource(R.string.mx_update_notice_body, notice.latestVersion.orEmpty())) },
-            confirmButton = {
-                androidx.compose.material3.TextButton(onClick = {
-                    onAction(MainAction.DismissUpdateNotice)
-                    notice.downloadUrl?.let { com.v2ray.ang.util.Utils.openUri(context, it) }
-                }) { Text(stringResource(R.string.update_now)) }
-            },
-            dismissButton = {
-                androidx.compose.material3.TextButton(onClick = { onAction(MainAction.DismissUpdateNotice) }) {
-                    Text(stringResource(R.string.mx_update_later))
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surface,
+        InAppUpdateDialog(
+            version = notice.latestVersion.orEmpty(),
+            url = notice.downloadUrl,
+            onDismiss = { onAction(MainAction.DismissUpdateNotice) },
         )
     }
 
@@ -266,11 +255,9 @@ fun MainScreen(
                         MainQuickActions(
                             fetch = fetchState,
                             testing = uiState.isTesting,
-                            // Matixray: a new fetch starts clean, the old configs are removed first; a tap while it runs only stops it.
-                            onFetch = {
-                                if (!fetchState.busy) onAction(MainAction.RemoveAllServers)
-                                onAction(MainAction.FetchConfigs)
-                            },
+                            // Matixray: the fetch clears only the free group itself (in the ViewModel); the user's own groups,
+                            // links and configs are never removed here. A tap while it runs only stops it.
+                            onFetch = { onAction(MainAction.FetchConfigs) },
                             onTestAll = {
                                 onAction(if (uiState.isTesting) MainAction.CancelTesting else MainAction.TestRealAllServers)
                             },
@@ -309,6 +296,8 @@ fun MainScreen(
                         onAutoSwitchChange = { mainViewModel.setAutoSwitch(it) },
                         fetchOnlyWorking = fetchOnlyWorking,
                         onFetchOnlyWorkingChange = { mainViewModel.setFetchOnlyWorking(it) },
+                        autoFetch = autoFetch,
+                        onAutoFetchChange = { mainViewModel.setAutoFetch(it) },
                         glassCards = glassCards,
                         onGlassCardsChange = { mainViewModel.setGlassCards(it) },
                         isp = isp,

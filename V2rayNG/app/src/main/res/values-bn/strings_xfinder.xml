@@ -105,4 +105,10 @@
     <string name="xf_mix_group_name">স্ক্যানার আইপি</string>
     <string name="xf_mix_done">স্ক্যানারের আইপি দিয়ে %1$dটি কনফিগ যোগ হয়েছে</string>
     <string name="xf_mix_failed">মেশানো যায়নি: vless, vmess বা trojan কনফিগ ব্যবহার করুন</string>
+    <string name="mx_auto_fetch_title">বিনামূল্যে কনফিগ স্বয়ংক্রিয়ভাবে প্রস্তুত</string>
+    <string name="mx_auto_fetch_hint">অ্যাপ খুললে (সর্বোচ্চ প্রতি তিন ঘণ্টায় একবার) ব্যাকগ্রাউন্ডে চুপচাপ বিনামূল্যে কনফিগ নামানো ও পরীক্ষা হয়, যাতে দরকারের সময় পরীক্ষিত তালিকা তৈরি থাকে। শেষ হলে আপনার দেখা গ্রুপটি আবার দেখানো হয়। বন্ধ করলে শুধু “কনফিগ আনুন” চাপলে আসবে।</string>
+    <string name="mx_update_downloading">আপডেট ডাউনলোড হচ্ছে… %1$d%%</string>
+    <string name="mx_update_ready">ডাউনলোড শেষ। ইনস্টল হচ্ছে…</string>
+    <string name="mx_update_failed">আপডেট ডাউনলোড করা যায়নি। সংযোগ দেখে আবার চেষ্টা করুন।</string>
+    <string name="mx_update_install">ইনস্টল</string>
 </resources>

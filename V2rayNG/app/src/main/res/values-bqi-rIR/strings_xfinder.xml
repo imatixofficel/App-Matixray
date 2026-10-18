@@ -39,7 +39,7 @@
     <string name="mx_psiphon_state_off">قطع</string>
     <string name="mx_psiphon_state_on">متصل</string>
     <string name="mx_about_title">درباره Matixray</string>
-    <string name="mx_about_body">Matixray نسخه ارتقا‌یافته V2Ray هسته، برا اتصال سریع و پایدار.\n\nامکانات:\n• کانفیگ رایگان: با یه ضربه رو «گرتن کانفیگ»، لیستای Mahsa NG دانلود بو، همه رو اینترنت خودت تست بونن و فقط سریع‌ترین سالما (حدود ۳۰ تا) تو گروه رایگان می‌مونن.\n• گروه و اشتراک، Xfinder و اسکنر آی‌پی، اتصال خودکار.\n• پروتکلا: VMess، VLESS، Trojan، Shadowsocks، Hysteria2 و بیشتر رو هسته Xray.\n\nکانفیگای رایگان از لیستای باز Mahsa NG میان. بو کانال تلگرام ما بپیوند.</string>
+    <string name="mx_about_body">Matixray نسخه ارتقا‌یافته V2Ray هسته، برا اتصال سریع و پایدار.\n\nامکانات:\n• کانفیگ رایگان: با یه ضربه رو «گرتن کانفیگ»، لیستای Mahsa NG دانلود بو، همه رو اینترنت خودت تست بونن و فقط سریع‌ترین سالما (حدود ۲۰ تا) تو گروه رایگان می‌مونن.\n• گروه و اشتراک، Xfinder و اسکنر آی‌پی، اتصال خودکار.\n• پروتکلا: VMess، VLESS، Trojan، Shadowsocks، Hysteria2 و بیشتر رو هسته Xray.\n\nکانفیگای رایگان از لیستای باز Mahsa NG میان. بو کانال تلگرام ما بپیوند.</string>
     <string name="mx_telegram_button">عضویت در کانال تلگرام</string>
     <string name="mx_remove_sni_title">حذف SNI</string>
     <string name="mx_remove_sni_summary">در اتصال TLS نام سرور (SNI) فرستاده نمی‌شود</string>
@@ -77,7 +77,7 @@
     <string name="mx_group_deleted">گروه حذف بی</string>
     <string name="mx_fetch_kept">%1$d کانفیگ سالم موند و %2$d کانفیگ بی‌جواب حذف بی</string>
     <string name="mx_fetch_only_working_title">فقط کانفیگ‌ای سالم نگه داشته بو</string>
-    <string name="mx_fetch_only_working_hint">پس از «گرتن کانفیگ» برنامه لیستای Mahsa NG رو دانلود کنه، سرورای مرده رو کنار بنه و بقیه رو با تست اتصال واقعی رو اینترنت خودت بسنجه. فقط سریع‌ترین سالما (حدود ۳۰ تا) می‌مونن. خاموشش بکنی، همه چی نگه داشته بو.</string>
+    <string name="mx_fetch_only_working_hint">پس از «گرتن کانفیگ» برنامه لیستای Mahsa NG رو دانلود کنه، سرورای مرده رو کنار بنه و بقیه رو با تست اتصال واقعی رو اینترنت خودت بسنجه. فقط سریع‌ترین سالما (حدود ۲۰ تا) می‌مونن. خاموشش بکنی، همه چی نگه داشته بو.</string>
     <string name="mx_import_target_title">اضافه کردن به</string>
     <string name="mx_import_target_new">گروه تازه</string>
     <string name="mx_free_badge">رایگان</string>
@@ -105,4 +105,10 @@
     <string name="xf_mix_group_name">آی‌پی‌ای اسکنر</string>
     <string name="xf_mix_done">%1$d کانفیگ با آی‌پی اسکنر اضافه بی</string>
     <string name="xf_mix_failed">قاطی نیبی: کانفیگ vless، vmess یا trojan بنه</string>
+    <string name="mx_auto_fetch_title">آماده‌سازی خودکار کانفیگ رایگان</string>
+    <string name="mx_auto_fetch_hint">وختی برنامه باز بو، و حداکثر هر سه ساعت یه بار، کانفیگای رایگان بی‌صدا تو پس‌زمینه گرته و تست بونن تا لیست سالم از قبل آماده بو. خاموشش بکنی، فقط با «گرتن کانفیگ» گرته بونن.</string>
+    <string name="mx_update_downloading">دانلود بروزرسانی… %1$d%%</string>
+    <string name="mx_update_ready">دانلود تموم بی. نصب بوئه…</string>
+    <string name="mx_update_failed">بروزرسانی دانلود نیبی. اینترنت رو بنگر و دوباره امتحان بکن.</string>
+    <string name="mx_update_install">نصب</string>
 </resources>

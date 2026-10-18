@@ -4,13 +4,14 @@ import com.v2ray.ang.AppConfig
 import com.v2ray.ang.dto.UrlContentRequest
 import com.v2ray.ang.util.HttpUtil
 import com.v2ray.ang.util.LogUtil
-import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import kotlinx.coroutines.withContext
 import java.util.Base64
 
 /**
@@ -128,33 +129,46 @@ object ConfigLinkParser {
     }
 }
 
-/** Downloads the sources, a few at a time, and hands each source's links over as soon as that source is read. */
+/**
+ * Downloads the sources all at once (each on its own coroutine, a few waiting at a time) and hands each source's links
+ * over as soon as that source is read, so the first answers are used while slow or dead sources are still waiting.
+ */
 object ConfigFetcher {
-    private const val TIMEOUT_MS = 10_000
-    private const val PARALLEL_SOURCES = 10
+    private const val TIMEOUT_MS = 8_000
+    private const val PARALLEL_SOURCES = 16
 
     /** How many shuffled links of one source are offered to the importer; the importer stops at its own limits. */
     const val CANDIDATES_PER_SOURCE = 80
 
+    /**
+     * Reads [sources] and calls [onSource] for each one in the order they answer. As soon as [enough] says so the rest
+     * are given up: their downloads are cancelled and not waited for, so a few slow servers never hold the run back.
+     */
     suspend fun fetchAll(
         sources: List<ConfigSource>,
+        enough: () -> Boolean = { false },
         onSource: suspend (ConfigSourceResult) -> Unit,
-    ) = coroutineScope {
-        val gate = Semaphore(PARALLEL_SOURCES)
-        sources.map { source ->
-            async {
-                val links = gate.withPermit { download(source) }
-                onSource(ConfigSourceResult(source, links))
+    ) {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        try {
+            val gate = Semaphore(PARALLEL_SOURCES)
+            val results = Channel<ConfigSourceResult>(Channel.UNLIMITED)
+            sources.forEach { source ->
+                scope.launch { results.send(ConfigSourceResult(source, gate.withPermit { download(source) })) }
             }
-        }.forEach { it.await() }
+            for (i in sources.indices) {
+                onSource(results.receive())
+                if (enough()) break
+            }
+        } finally {
+            scope.cancel()
+        }
     }
 
-    private suspend fun download(source: ConfigSource): List<String> = withContext(Dispatchers.IO) {
-        try {
+    private fun download(source: ConfigSource): List<String> {
+        return try {
             val body = HttpUtil.getUrlContent(UrlContentRequest(url = source.url, timeout = TIMEOUT_MS))
             ConfigLinkParser.extractLinks(body).shuffled().take(CANDIDATES_PER_SOURCE)
-        } catch (cancelled: CancellationException) {
-            throw cancelled
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "Config source failed: ${source.name}", e)
             emptyList()

@@ -73,7 +73,7 @@ val LocalGlassStyle = staticCompositionLocalOf { DarkGlassStyle }
  * holder only keeps the current value as Compose state so every card redraws when the setting changes.
  */
 object GlassPrefs {
-    var enabled by mutableStateOf(MmkvManager.decodeSettingsBool(AppConfig.PREF_GLASS_CARDS, true))
+    var enabled by mutableStateOf(MmkvManager.decodeSettingsBool(AppConfig.PREF_GLASS_CARDS, false))
 }
 
 val GlassCardShape = RoundedCornerShape(14.dp)
@@ -110,17 +110,30 @@ fun Modifier.liquidGlass(
     if (GlassPrefs.enabled) {
         // Liquid glass (the user can turn it off in the settings): a see-through fill that is brighter on top, and an
         // edge that catches light on its upper-left and fades toward the lower-right.
-        val fill = if (dark) listOf(Color(0x38FFFFFF), Color(0x12FFFFFF)) else listOf(Color(0xE6FFFFFF), Color(0xB8F4F6FB))
-        val edge = if (dark) listOf(Color(0x80FFFFFF), Color(0x14FFFFFF)) else listOf(Color(0xFFFFFFFF), Color(0x33B8C0D4))
+        // iPhone-style glass: very see-through, so the colors of the page behind show through; a bright rim on the upper-left
+        // and the lower-right edges (where light would catch the glass) and a soft wash of light from the top-left corner.
+        val fill = if (dark) listOf(Color(0x30FFFFFF), Color(0x0FFFFFFF)) else listOf(Color(0x99FFFFFF), Color(0x5CFFFFFF))
+        val rim = if (dark) Color(0xCCFFFFFF) else Color(0xFFFFFFFF)
+        val rimFaint = if (dark) Color(0x1FFFFFFF) else Color(0x40FFFFFF)
+        val edge = listOf(rim, rimFaint, rimFaint, rim.copy(alpha = rim.alpha * 0.7f))
+        val sheen = if (dark) Color(0x26FFFFFF) else Color(0x80FFFFFF)
         var glassResult = (if (dark) this else this.shadow(
-            elevation = 4.dp,
+            elevation = 8.dp,
             shape = shape,
             clip = false,
-            ambientColor = Color(0x26000000),
-            spotColor = Color(0x26000000),
-        )).clip(shape).background(Brush.verticalGradient(fill))
+            ambientColor = Color(0x2E3B4A7A),
+            spotColor = Color(0x2E3B4A7A),
+        )).clip(shape).background(Brush.verticalGradient(fill)).drawBehind {
+            drawRect(
+                Brush.linearGradient(
+                    colors = listOf(sheen, Color.Transparent),
+                    start = Offset.Zero,
+                    end = Offset(size.width * 0.7f, size.height * 1.2f),
+                ),
+            )
+        }
         if (tint != Color.Unspecified) glassResult = glassResult.background(tint)
-        return glassResult.border(1.dp, Brush.linearGradient(edge), shape)
+        return glassResult.border(1.2.dp, Brush.linearGradient(edge, start = Offset.Zero, end = Offset.Infinite), shape)
     }
     var result = (if (dark) this else this.shadow(
         elevation = 3.dp,
@@ -205,7 +218,30 @@ fun AppBackdrop(modifier: Modifier = Modifier) {
                         endY = size.height * 0.42f,
                     )
                 }
-                onDrawBehind { drawRect(brush) }
+                val glassOn = GlassPrefs.enabled
+                onDrawBehind {
+                    drawRect(brush)
+                    if (glassOn) {
+                        // Soft colored light behind the page, so the glass cards have something to refract.
+                        val blobs = if (dark) {
+                            listOf(Color(0x663B6BFF), Color(0x5A8A4DFF), Color(0x4D19C6B8))
+                        } else {
+                            listOf(Color(0x553B82F6), Color(0x4DA78BFA), Color(0x4D2DD4BF))
+                        }
+                        val spots = listOf(
+                            Offset(size.width * 0.10f, size.height * 0.12f),
+                            Offset(size.width * 0.95f, size.height * 0.45f),
+                            Offset(size.width * 0.25f, size.height * 0.92f),
+                        )
+                        blobs.forEachIndexed { i, color ->
+                            drawCircle(
+                                brush = Brush.radialGradient(listOf(color, Color.Transparent), center = spots[i], radius = size.width * 0.8f),
+                                radius = size.width * 0.8f,
+                                center = spots[i],
+                            )
+                        }
+                    }
+                }
             }
     )
 }

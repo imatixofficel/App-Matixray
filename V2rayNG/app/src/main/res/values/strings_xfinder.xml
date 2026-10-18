@@ -57,7 +57,7 @@
 
     <!-- About -->
     <string name="mx_about_title">About Matixray</string>
-    <string name="mx_about_body">Matixray is an upgraded build of V2Ray, made to connect fast and keep you connected.\n\nWhat it gives you:\n• Free configs: one tap on “Get configs” downloads Mahsa NG\'s public lists, tests every config on your own connection and keeps only the fastest working ones (about 30) in the Free group.\n• Groups and subscriptions: your own groups, subscription links, refresh and delete per group.\n• Xfinder and the IP scanner: finds clean IPs and can mix them into your configs.\n• Auto-connect: if the server drops, the app switches to the best working one.\n• Protocols: VMess, VLESS, Trojan, Shadowsocks, Hysteria2 and more, on the Xray core, with Psiphon and Aether.\n\nThe free configs come from the open lists of Mahsa NG and its community, whom we thank. Join our Telegram channel for news and updates.</string>
+    <string name="mx_about_body">Matixray is an upgraded build of V2Ray, made to connect fast and keep you connected.\n\nWhat it gives you:\n• Free configs: one tap on “Get configs” downloads Mahsa NG\'s public lists, tests every config on your own connection and keeps only the fastest working ones (about 20) in the Free group.\n• Groups and subscriptions: your own groups, subscription links, refresh and delete per group.\n• Xfinder and the IP scanner: finds clean IPs and can mix them into your configs.\n• Auto-connect: if the server drops, the app switches to the best working one.\n• Protocols: VMess, VLESS, Trojan, Shadowsocks, Hysteria2 and more, on the Xray core, with Psiphon and Aether.\n\nThe free configs come from the open lists of Mahsa NG and its community, whom we thank. Join our Telegram channel for news and updates.</string>
     <string name="mx_telegram_button">Join the Telegram channel</string>
     <string name="mx_remove_sni_title">Remove SNI</string>
     <string name="mx_remove_sni_summary">The server name (SNI) is not sent in TLS connections</string>
@@ -183,7 +183,7 @@
     <string name="mx_group_deleted">Group deleted</string>
     <string name="mx_fetch_kept">Kept %1$d working configs, removed %2$d that did not respond</string>
     <string name="mx_fetch_only_working_title">Keep only working configs</string>
-    <string name="mx_fetch_only_working_hint">After “Get configs” the app downloads Mahsa NG\'s lists, drops the servers that do not even open a connection, then tests the rest with a real connection test on your own network. Only the fastest working configs (about 30) stay in the Free group and the dead ones are deleted, so every config you see should connect. This takes a short while. Turn it off to keep everything that was downloaded, working or not.</string>
+    <string name="mx_fetch_only_working_hint">After “Get configs” the app downloads Mahsa NG\'s lists, drops the servers that do not even open a connection, then tests the rest with a real connection test on your own network. Only the fastest working configs (about 20) stay in the Free group and the dead ones are deleted, so every config you see should connect. This takes a short while. Turn it off to keep everything that was downloaded, working or not.</string>
     <string name="mx_import_target_title">Add to</string>
     <string name="mx_import_target_new">New group</string>
     <string name="mx_free_badge">Free</string>
@@ -191,7 +191,7 @@
     <string name="mx_settings_configs">Configs</string>
     <string name="mx_settings_look">Appearance</string>
     <string name="mx_glass_title">Liquid glass cards</string>
-    <string name="mx_glass_hint">Draws the cards of the app (configs, groups, settings) with a translucent glass look: a soft see-through fill and a bright edge. Turn it off for plain solid cards, which are a little lighter on old phones.</string>
+    <string name="mx_glass_hint">Turn it on to draw the cards of the app (configs, groups, settings) like glass: a see-through fill, a bright sheen from the corner and a shining edge. Off (the default) gives plain solid cards, which are a little lighter on old phones.</string>
     <string name="mx_isp_title">My internet provider</string>
     <string name="mx_isp_hint">Choose the company your internet comes from. Every config is tested on your own connection, so only what really works on your provider is kept; where a list made for your provider exists, the app reads it too. Auto means all lists.</string>
     <string name="mx_isp_auto">Auto</string>
@@ -211,4 +211,10 @@
     <string name="xf_mix_group_name">Scanner IPs</string>
     <string name="xf_mix_done">Added %1$d configs with scanner IPs</string>
     <string name="xf_mix_failed">Could not mix: use a vless, vmess or trojan config</string>
+    <string name="mx_auto_fetch_title">Prepare free configs automatically</string>
+    <string name="mx_auto_fetch_hint">When the app opens, and at most every three hours, it fetches the free configs and tests them quietly in the background, so a list of tested, working configs is already waiting when you need it. The group you were looking at is shown again when it is done. Turn it off to fetch only when you tap “Get configs”.</string>
+    <string name="mx_update_downloading">Downloading the update… %1$d%%</string>
+    <string name="mx_update_ready">Download finished. Installing…</string>
+    <string name="mx_update_failed">The update could not be downloaded. Check your connection and try again.</string>
+    <string name="mx_update_install">Install</string>
 </resources>

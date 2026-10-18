@@ -204,6 +204,37 @@ class MainViewModel(
 
     /** True from the end of a "get configs" download until its tests finish and the dead configs are removed. */
     private var purgeDeadAfterTests = false
+
+    /** The group the user was looking at when a background fetch started; shown again when that fetch is done. */
+    private var restoreGroupAfterFetch: String? = null
+
+    // Matixray: the free configs are fetched and tested by themselves when the app opens, so a tested list is waiting.
+    private val _autoFetch = MutableStateFlow(MmkvManager.decodeSettingsBool(AppConfig.PREF_AUTO_FETCH, true))
+    val autoFetch: StateFlow<Boolean> = _autoFetch.asStateFlow()
+
+    fun setAutoFetch(enabled: Boolean) {
+        _autoFetch.value = enabled
+        MmkvManager.encodeSettings(AppConfig.PREF_AUTO_FETCH, enabled)
+    }
+
+    private fun restoreGroupIfNeeded() {
+        val previous = restoreGroupAfterFetch ?: return
+        restoreGroupAfterFetch = null
+        if (_uiState.value.groups.any { it.id == previous }) subscriptionIdChanged(previous)
+    }
+
+    /** Starts a quiet fetch when the app opens, if the free group is empty or its last fetch is old. */
+    private fun autoFetchOnStart() {
+        if (!_autoFetch.value) return
+        viewModelScope.launch(ioDispatcher) {
+            kotlinx.coroutines.delay(AUTO_FETCH_DELAY_MS)
+            val last = MmkvManager.decodeSettingsString(AppConfig.PREF_FREE_LAST_FETCH)?.toLongOrNull() ?: 0L
+            val stale = System.currentTimeMillis() - last > AUTO_FETCH_MAX_AGE_MS
+            val empty = dataSource.getServerGuidList(AppConfig.FREE_SUBSCRIPTION_ID).isEmpty()
+            if (_fetchState.value.busy || _uiState.value.isTesting || !(stale || empty)) return@launch
+            withContext(Dispatchers.Main) { fetchConfigs(silent = true) }
+        }
+    }
     private val _updateAvailable = MutableStateFlow(false)
     val updateAvailable: StateFlow<Boolean> = _updateAvailable.asStateFlow()
     private var probeFailStreak = 0
@@ -661,6 +692,7 @@ class MainViewModel(
     // ---------- Initialization ----------
     fun initialize() {
         checkForUpdateOnStart()
+        autoFetchOnStart()
         viewModelScope.launch(preloadDispatcher) {
             try {
                 initialPageReady.await()
@@ -1048,6 +1080,7 @@ class MainViewModel(
         if (_fetchState.value.busy) {
             fetchJob?.cancel()
             fetchJob = null
+            restoreGroupAfterFetch = null
             cancelAllPing()
             _fetchState.value = ConfigFetchState()
             return
@@ -1060,9 +1093,10 @@ class MainViewModel(
      * profile, the list refreshing as they arrive), then tests the group and sorts the best first. A config the app
      * already holds, or one that came twice, is dropped by the app's own duplicate identity.
      */
-    private fun fetchConfigs() {
+    private fun fetchConfigs(silent: Boolean = false) {
         val sources = ConfigSources.forIsp(MmkvManager.decodeSettingsString(AppConfig.PREF_ISP) ?: IspChoice.AUTO)
         _fetchState.value = ConfigFetchState(FetchPhase.Downloading, sourcesTotal = sources.size)
+        restoreGroupAfterFetch = if (silent) _uiState.value.selectedGroupId else null
         fetchJob = viewModelScope.launch(ioDispatcher) {
             try {
                 // Matixray: the fetched configs live in the free group, and only that group is cleared (when the first
@@ -1083,7 +1117,7 @@ class MainViewModel(
                 var done = 0
                 var reachable = 0
                 var lastRefreshAt = 0L
-                ConfigFetcher.fetchAll(sources) { result ->
+                ConfigFetcher.fetchAll(sources, enough = { added >= ENOUGH_CANDIDATES }) { result ->
                     importLock.withLock {
                         done++
                         if (result.links.isNotEmpty()) reachable++
@@ -1092,20 +1126,9 @@ class MainViewModel(
                             dataSource.clearGroup(freeId)
                             collectSeen()
                         }
-                        var fromSource = 0
-                        for (link in result.links) {
-                            if (added >= MAX_FETCH_TOTAL || fromSource >= MAX_FETCH_PER_SOURCE) break
-                            currentCoroutineContext().ensureActive()
-                            if (!importFetchedLink(link, seen, freeId)) continue
-                            added++
-                            fromSource++
-                            _fetchState.value = ConfigFetchState(FetchPhase.Downloading, done, sources.size, added)
-                            val now = System.currentTimeMillis()
-                            if (now - lastRefreshAt >= FETCH_REFRESH_MS) {
-                                lastRefreshAt = now
-                                setupGroupTab(forceRefresh = true)
-                            }
-                        }
+                        currentCoroutineContext().ensureActive()
+                        val take = minOf(MAX_FETCH_PER_SOURCE, MAX_FETCH_TOTAL - added)
+                        if (take > 0) added += importFetchedBatch(result.links.take(take), seen, freeId)
                         _fetchState.value = ConfigFetchState(FetchPhase.Downloading, done, sources.size, added)
                     }
                 }
@@ -1119,10 +1142,11 @@ class MainViewModel(
                 currentCoroutineContext().ensureActive()
                 if (added <= 0) {
                     _fetchState.value = ConfigFetchState()
-                    toast(dataSource.getString(if (reachable == 0) R.string.mx_fetch_unreachable else R.string.mx_fetch_none))
+                    restoreGroupAfterFetch = null
+                    if (!silent) toast(dataSource.getString(if (reachable == 0) R.string.mx_fetch_unreachable else R.string.mx_fetch_none))
                     return@launch
                 }
-                toast(dataSource.getString(R.string.mx_fetch_result, added, reachable, sources.size))
+                if (!silent) toast(dataSource.getString(R.string.mx_fetch_result, added, reachable, sources.size))
                 showFetchedGroup()
                 setupGroupTab(forceRefresh = true).join()
                 if (currentServers().isEmpty()) {
@@ -1168,6 +1192,32 @@ class MainViewModel(
         val keep = times.filter { it.second >= 0L }.sortedBy { it.second }.take(REAL_TEST_MAX).map { it.first }.toHashSet()
         guids.filter { it !in keep }.forEach { dataSource.removeServer(it) }
         guids.size - keep.size
+    }
+
+    /**
+     * Adds all the share links of one source to the free group [groupId] in one import, then removes the profiles that
+     * the app already holds (the same identity as one in [seen]). Returns how many new profiles stayed.
+     */
+    private suspend fun importFetchedBatch(links: List<String>, seen: MutableSet<ProfileItem>, groupId: String): Int {
+        if (links.isEmpty()) return 0
+        val before = dataSource.getServerGuidList(groupId).toHashSet()
+        try {
+            dataSource.importBatchConfig(links.joinToString("\n"), groupId, true)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (e: Exception) {
+            LogUtil.e(AppConfig.TAG, "Importing a fetched source failed", e)
+        }
+        var kept = 0
+        dataSource.getServerGuidList(groupId).filter { it !in before }.forEach { guid ->
+            val profile = dataSource.decodeServerConfig(guid)
+            if (profile == null || (!profile.configType.isComplexType() && !seen.add(profile.duplicateIdentity()))) {
+                dataSource.removeServer(guid)
+            } else {
+                kept++
+            }
+        }
+        return kept
     }
 
     /**
@@ -1612,6 +1662,7 @@ class MainViewModel(
                         val kept = working.size
                         toast(dataSource.getString(R.string.mx_fetch_kept, kept, before.size - kept))
                     }
+                    MmkvManager.encodeSettings(AppConfig.PREF_FREE_LAST_FETCH, System.currentTimeMillis().toString())
                     cacheMutex.withLock { groupDataCache.clear() }
                     setupGroupTab(forceRefresh = true).join()
                 } catch (cancelled: CancellationException) {
@@ -1621,6 +1672,7 @@ class MainViewModel(
                 } finally {
                     // The list shows the free group again only now.
                     _fetchState.value = ConfigFetchState()
+                    withContext(Dispatchers.Main) { restoreGroupIfNeeded() }
                 }
                 sortByTestResultsAsync()
             }
@@ -1688,14 +1740,18 @@ class MainViewModel(
 
     companion object {
         /** Matixray: limits of one "get configs" run, so the list and the tests that follow stay small. */
-        private const val MAX_FETCH_TOTAL = 600
-        private const val MAX_FETCH_PER_SOURCE = 30
+        private const val MAX_FETCH_TOTAL = 400
+        private const val MAX_FETCH_PER_SOURCE = 25
         private const val TCP_PRECHECK_PARALLEL = 60
         /** How many configs go on to the real test after the quick check: the ones that answered fastest. */
-        private const val REAL_TEST_MAX = 150
-        private const val TCP_PRECHECK_TIMEOUT_MS = 1200
+        private const val REAL_TEST_MAX = 60
+        private const val TCP_PRECHECK_TIMEOUT_MS = 1000
+        /** The download stops waiting for slow sources once this many configs are in. */
+        private const val ENOUGH_CANDIDATES = 140
+        private const val AUTO_FETCH_DELAY_MS = 6_000L
+        private const val AUTO_FETCH_MAX_AGE_MS = 3 * 60 * 60 * 1000L
         /** How many tested configs the free group keeps: few, but the fastest ones that work. */
-        private const val FREE_KEEP_BEST = 30
+        private const val FREE_KEEP_BEST = 20
         private const val FETCH_REFRESH_MS = 700L
 
         /** Matixray: the update check on start runs once per process, not once per screen. */
