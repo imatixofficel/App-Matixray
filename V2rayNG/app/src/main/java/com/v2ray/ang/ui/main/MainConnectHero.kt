@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -80,110 +82,196 @@ fun MainConnectHero(
     accent: Color = XfBlue,
     @Suppress("UNUSED_PARAMETER") accentLight: Color = XfPurpleLight,
     onStatusClick: (() -> Unit)? = null,
+    autoSwitch: Boolean? = null,
+    onAutoSwitchChange: ((Boolean) -> Unit)? = null,
+    onRouting: (() -> Unit)? = null,
+    onTelegram: (() -> Unit)? = null,
     bottomExtra: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
 
-    // The page is one column: the timer and status at the top, the live numbers (and whatever the caller adds) at the
-    // bottom, and between them the free space with the faint logo, centered a little above its middle.
-    Column(modifier = modifier.fillMaxSize().clipToBounds()) {
+    // Matixray: the page is a plain list in one white card, as in V2Box (duration, upload, download, smart connect,
+    // routing, community), the status line under it and, at the end, whatever the caller adds.
+    val idle = stringResource(R.string.mx_stat_none)
+    val link = Color(0xFF1BA1C9)
+    val ink = scheme.onSurface
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+    ) {
         Column(
             modifier = Modifier
-                .zIndex(1f)
+                .padding(horizontal = 14.dp, vertical = 8.dp)
                 .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .clip(RoundedCornerShape(16.dp))
+                .background(scheme.surface),
         ) {
-            Text(
-                text = formatElapsed(if (isRunning) elapsedSec() else 0L, scheme.onBackground, isRunning),
-                style = MaterialTheme.typography.displaySmall,
-                fontSize = 40.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
+            HomeListRow(
+                iconRes = R.drawable.ic_mx_clock_24dp,
+                label = stringResource(R.string.mx_stat_duration),
+                value = if (isRunning) formatClock(elapsedSec()) else "-",
+                tint = ink,
             )
-            Spacer(Modifier.height(8.dp))
-            // The status as a small framed tag: a dot (green while connected, yellow while not) and the words.
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(scheme.onSurface.copy(alpha = 0.06f))
-                    .then(
-                        // A tap on the status line of a running tunnel tests the connection again.
-                        if (onStatusClick != null && isRunning) Modifier.clickable(role = Role.Button, onClick = onStatusClick)
-                        else Modifier
-                    )
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(if (isRunning) XfGreen else XfYellow)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = statusText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                )
-            }
-        }
-
-        BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            // The logo is a picture drawn once and tinted, so it costs one bitmap draw per frame and never animates.
-            Image(
-                painter = painterResource(R.drawable.xf_logo),
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-                alpha = if (isRunning) 0.16f else 0.09f,
-                colorFilter = ColorFilter.tint(accent),
-                modifier = Modifier
-                    .align(BiasAlignment(0f, -0.05f))
-                    .requiredSize(minOf(maxWidth * 0.9f, maxHeight * 1.05f)),
+            HomeListRow(
+                iconRes = R.drawable.ic_arrow_up_24dp,
+                label = stringResource(R.string.mx_stat_upload),
+                value = if (isRunning) speed.upBytesPerSec.toSpeedString() else idle,
+                tint = ink,
             )
-        }
-
-        Column(
-            modifier = Modifier
-                .zIndex(1f)
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-        ) {
-            val idle = stringResource(R.string.mx_stat_none)
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                StatBox(
-                    iconRes = R.drawable.ic_arrow_down_24dp,
-                    label = stringResource(R.string.mx_stat_download),
-                    value = if (isRunning) speed.downBytesPerSec.toSpeedString() else idle,
-                    tint = accent,
-                )
-                StatBox(
-                    iconRes = R.drawable.ic_arrow_up_24dp,
-                    label = stringResource(R.string.mx_stat_upload),
-                    value = if (isRunning) speed.upBytesPerSec.toSpeedString() else idle,
-                    tint = accent,
-                )
-            }
-            Spacer(Modifier.height(10.dp))
-            PingBox(
+            HomeListRow(
+                iconRes = R.drawable.ic_arrow_down_24dp,
+                label = stringResource(R.string.mx_stat_download),
+                value = if (isRunning) speed.downBytesPerSec.toSpeedString() else idle,
+                tint = ink,
+            )
+            HomeListRow(
+                iconRes = R.drawable.ic_flash_on_24dp,
                 label = stringResource(R.string.mx_stat_ping),
                 value = if (isRunning && pingMillis != null) stringResource(R.string.mx_ping_value, pingMillis) else idle,
-                pingMillis = if (isRunning) pingMillis else null,
-                tint = accent,
+                tint = ink,
                 onClick = if (isRunning) onStatusClick else null,
-                modifier = Modifier.padding(horizontal = 16.dp),
             )
-            if (bottomExtra != null) {
-                Spacer(Modifier.height(10.dp))
-                bottomExtra()
+            if (autoSwitch != null && onAutoSwitchChange != null) {
+                HomeListRow(
+                    iconRes = R.drawable.ic_flash_on_24dp,
+                    label = stringResource(R.string.mx_auto_switch_title),
+                    tint = ink,
+                    onClick = { onAutoSwitchChange(!autoSwitch) },
+                    trailing = { androidx.compose.material3.Switch(checked = autoSwitch, onCheckedChange = null) },
+                )
             }
+            if (onRouting != null) {
+                HomeListRow(
+                    iconRes = R.drawable.ic_routing_24dp,
+                    label = stringResource(R.string.routing_settings_title),
+                    tint = ink,
+                    labelColor = link,
+                    onClick = onRouting,
+                    chevron = true,
+                )
+            }
+            if (onTelegram != null) {
+                HomeListRow(
+                    iconRes = R.drawable.ic_telegram_24dp,
+                    label = stringResource(R.string.mx_telegram_button),
+                    tint = ink,
+                    labelColor = link,
+                    onClick = onTelegram,
+                    chevron = true,
+                    last = true,
+                )
+            }
+        }
+        // The status as a small tag under the card: a dot (green while connected, yellow while not) and the words.
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 14.dp, vertical = 4.dp)
+                .clip(RoundedCornerShape(50))
+                .background(scheme.onSurface.copy(alpha = 0.06f))
+                .then(
+                    if (onStatusClick != null && isRunning) Modifier.clickable(role = Role.Button, onClick = onStatusClick)
+                    else Modifier
+                )
+                .padding(horizontal = 14.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(if (isRunning) XfGreen else XfYellow)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = statusText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = scheme.onSurfaceVariant,
+                maxLines = 2,
+            )
+        }
+        if (bottomExtra != null) {
+            Spacer(Modifier.height(6.dp))
+            bottomExtra()
+        }
+    }
+}
+
+private fun formatClock(totalSeconds: Long): String {
+    val h = totalSeconds / 3600
+    val m = (totalSeconds % 3600) / 60
+    val sec = totalSeconds % 60
+    return "%02d:%02d:%02d".format(h, m, sec)
+}
+
+/** One row of the home card: icon, label, the value (or a switch / an arrow) at the end, a thin divider under it. */
+@Composable
+private fun HomeListRow(
+    iconRes: Int,
+    label: String,
+    tint: Color,
+    modifier: Modifier = Modifier,
+    value: String? = null,
+    labelColor: Color = Color.Unspecified,
+    onClick: (() -> Unit)? = null,
+    chevron: Boolean = false,
+    last: Boolean = false,
+    trailing: (@Composable () -> Unit)? = null,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(22.dp),
+            )
+            Spacer(Modifier.width(14.dp))
+            Text(
+                text = label,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = labelColor,
+                maxLines = 1,
+            )
+            if (value != null) {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = scheme.onSurface,
+                    maxLines = 1,
+                )
+            }
+            if (trailing != null) trailing()
+            if (chevron) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_arrow_forward_24dp),
+                    contentDescription = null,
+                    tint = scheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
+        if (!last) {
+            Box(
+                modifier = Modifier
+                    .padding(start = 52.dp)
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(scheme.outlineVariant)
+            )
         }
     }
 }

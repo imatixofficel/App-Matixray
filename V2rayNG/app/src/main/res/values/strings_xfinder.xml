@@ -217,4 +217,5 @@
     <string name="mx_update_ready">Download finished. Installing…</string>
     <string name="mx_update_failed">The update could not be downloaded. Check your connection and try again.</string>
     <string name="mx_update_install">Install</string>
+    <string name="mx_stat_duration">Duration</string>
 </resources>

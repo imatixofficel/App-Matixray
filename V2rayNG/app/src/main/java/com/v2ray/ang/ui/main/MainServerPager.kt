@@ -335,37 +335,43 @@ private fun Modifier.verticalText(): Modifier = this
     }
     .rotate(-90f)
 
-private val pingGoodText = Color(0xFF0E9F6E)
-private val pingMidText = Color(0xFFB7791F)
+private val pingGoodText = Color(0xFF0B5D1E)
+private val pingGoodBg = Color(0xFF93E39A)
+private val pingMidText = Color(0xFF6B4A00)
+private val pingMidBg = Color(0xFFF3C877)
+private val pingFailBg = Color(0xFFE57373)
+private val ConfigSelectedCard = Color(0xFFA5D0E8)
+private val ConfigSelectedStrip = Color(0xFF0A84C6)
+private val ConfigInk = Color(0xFF111111)
 
-/** The round-cornered ping mark of a config card: green with the delay, red "Timeout" when the test failed. */
+/** The ping mark of a config card, as in V2Box: a small green badge with the delay, a soft red "Timeout" when the test failed. */
 @Composable
-private fun PingPill(delayMillis: Long, onBlue: Boolean = false) {
+private fun PingPill(delayMillis: Long) {
     if (delayMillis == 0L) return
     val failed = delayMillis < 0L
-    val color = when {
-        onBlue -> Color.White
-        failed -> colorPingRed
-        delayMillis > 800L -> pingMidText
-        else -> pingGoodText
+    val (bg, fg) = when {
+        failed -> pingFailBg to Color.White
+        delayMillis > 800L -> pingMidBg to pingMidText
+        else -> pingGoodBg to pingGoodText
     }
     Text(
         text = if (failed) stringResource(R.string.mx_timeout) else stringResource(R.string.server_test_delay_value, delayMillis),
         fontSize = 11.sp,
         fontWeight = FontWeight.Bold,
-        color = color,
+        color = fg,
         maxLines = 1,
         modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(color.copy(alpha = if (onBlue) 0.22f else 0.14f))
+            .clip(RoundedCornerShape(6.dp))
+            .background(bg)
             .padding(horizontal = 8.dp, vertical = 2.dp),
     )
 }
 
 /**
- * One config of the list, small and flat like the design: a strip with the protocol written upward on the edge, the
- * name, the address with the ping mark, and a rail with the edit and share buttons. The selected config gets a violet
- * frame and a mint strip. The card keeps the left-to-right order of the design in every language.
+ * One config of the list, as V2Box draws it: a rounded strip with the protocol written upward, a white card with the
+ * name on top and the address with the ping badge below, and a gray block at the end with three round white buttons
+ * (edit, share, delete). The selected config has a light blue card and a solid blue strip. The card keeps the
+ * left-to-right order of the design in every language.
  */
 @Composable
 private fun ServerListItem(
@@ -380,21 +386,19 @@ private fun ServerListItem(
     } else {
         null
     }
-    val shape = RoundedCornerShape(16.dp)
+    val outer = RoundedCornerShape(16.dp)
+    val inner = RoundedCornerShape(12.dp)
     val protocol = row.profile.configType.name
-    // Matixray: the selected config is blue behind, white on top, as in V2Box.
-    val mainColor = if (isSelected) Color.White else scheme.onSurface
-    val subColor = if (isSelected) Color.White.copy(alpha = 0.82f) else scheme.onSurfaceVariant
+    val mainColor = if (isSelected) ConfigInk else scheme.onSurface
+    val subColor = if (isSelected) ConfigInk.copy(alpha = 0.65f) else scheme.onSurfaceVariant
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(
             modifier = Modifier
                 .padding(horizontal = 14.dp, vertical = 4.dp)
                 .fillMaxWidth()
-                .height(72.dp)
-                .then(
-                    if (isSelected) Modifier.clip(shape).background(Brush.horizontalGradient(listOf(ConfigBlue, ConfigBlueDark)))
-                    else Modifier.liquidGlass(shape)
-                )
+                .height(76.dp)
+                .clip(outer)
+                .background(scheme.surfaceContainerHigh)
                 .semantics {
                     if (selectedStateDescription != null) {
                         stateDescription = selectedStateDescription
@@ -406,9 +410,10 @@ private fun ServerListItem(
             // Protocol strip
             Box(
                 modifier = Modifier
-                    .width(30.dp)
+                    .width(34.dp)
                     .fillMaxHeight()
-                    .background(if (isSelected) Color.White.copy(alpha = 0.22f) else scheme.primary.copy(alpha = 0.10f)),
+                    .clip(inner)
+                    .background(if (isSelected) ConfigSelectedStrip else scheme.surfaceContainerHighest),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -416,63 +421,75 @@ private fun ServerListItem(
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp,
-                    color = if (isSelected) Color.White else scheme.primary,
+                    color = if (isSelected) Color.White else scheme.onSurface,
                     maxLines = 1,
                     softWrap = false,
                     modifier = Modifier.verticalText(),
                 )
             }
-            // Name, address and ping
-            Column(
+            // Card: name on top, address and ping below
+            Box(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 12.dp, end = 6.dp),
-                verticalArrangement = Arrangement.spacedBy(5.dp),
+                    .fillMaxHeight()
+                    .padding(start = 4.dp)
+                    .clip(inner)
+                    .background(if (isSelected) ConfigSelectedCard else scheme.surface),
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        text = row.remarks,
-                        modifier = Modifier.weight(1f, fill = false),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = mainColor,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    if (row.profile.subscriptionId == AppConfig.FREE_SUBSCRIPTION_ID) FreeBadge(onBlue = isSelected)
-                }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = row.statistics,
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = subColor,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    PingPill(row.testDelayMillis, onBlue = isSelected)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = row.remarks,
+                            modifier = Modifier.weight(1f, fill = false),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = mainColor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (row.profile.subscriptionId == AppConfig.FREE_SUBSCRIPTION_ID) FreeBadge(onBlue = false)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = row.statistics,
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = subColor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        PingPill(row.testDelayMillis)
+                    }
                 }
             }
-            // Rail with the buttons
+            // Gray block with the round buttons
             Row(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .background(if (isSelected) Color.Transparent else scheme.surfaceContainerHigh)
-                    .padding(horizontal = 10.dp),
+                    .padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                if (!doubleColumnDisplay) {
-                    RailButton(R.drawable.ic_edit_24dp, stringResource(R.string.acc_edit), onBlue = isSelected) {
+                if (doubleColumnDisplay) {
+                    RailButton(R.drawable.ic_more_vert_24dp, stringResource(R.string.acc_more)) {
+                        actions.more(row.guid, row.profile)
+                    }
+                } else {
+                    RailButton(R.drawable.ic_edit_24dp, stringResource(R.string.acc_edit)) {
                         actions.edit(row.guid, row.profile)
                     }
+                    RailButton(R.drawable.ic_share_24dp, stringResource(R.string.title_configuration_share)) {
+                        actions.share(row.guid, row.profile)
+                    }
+                    RailButton(R.drawable.ic_delete_24dp, stringResource(R.string.menu_item_del_config)) {
+                        actions.remove(row.guid, row.remarks)
+                    }
                 }
-                // Share, with the rest of the server actions (delete) in the same list.
-                RailButton(
-                    if (doubleColumnDisplay) R.drawable.ic_more_vert_24dp else R.drawable.ic_share_24dp,
-                    stringResource(if (doubleColumnDisplay) R.string.acc_more else R.string.title_configuration_share),
-                    onBlue = isSelected,
-                ) { actions.more(row.guid, row.profile) }
             }
         }
     }
@@ -482,27 +499,23 @@ private fun ServerListItem(
 private fun RailButton(
     @androidx.annotation.DrawableRes iconRes: Int,
     description: String,
-    onBlue: Boolean = false,
     onClick: () -> Unit,
 ) {
     IconButton(
         onClick = onClick,
         modifier = Modifier
-            .size(40.dp)
+            .size(36.dp)
             .clip(CircleShape)
-            .background(if (onBlue) Color.White.copy(alpha = 0.22f) else MaterialTheme.colorScheme.primary),
+            .background(Color.White),
     ) {
         Icon(
             painter = painterResource(iconRes),
             contentDescription = description,
-            tint = if (onBlue) Color.White else MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.size(20.dp),
+            tint = ConfigInk,
+            modifier = Modifier.size(18.dp),
         )
     }
 }
-
-private val ConfigBlue = Color(0xFF2F7BF6)
-private val ConfigBlueDark = Color(0xFF1D5FD8)
 
 /** One line of the grouped list: the card of a group, or one config under an open card. */
 private sealed interface ConfigListEntry {
@@ -540,6 +553,7 @@ internal fun GroupedConfigsList(
     onEditServer: (String, ProfileItem) -> Unit,
     onShareServer: (String, ProfileItem) -> Unit,
     onMoreServer: (String, ProfileItem) -> Unit,
+    onRemoveServer: (String, String) -> Unit,
     onLocateHandled: () -> Unit,
     contentPadding: PaddingValues,
 ) {
@@ -599,7 +613,7 @@ internal fun GroupedConfigsList(
         edit = onEditServer,
         share = onShareServer,
         more = onMoreServer,
-        remove = { _, _ -> },
+        remove = onRemoveServer,
     )
 
     LazyColumn(

@@ -338,6 +338,10 @@ fun MainScreen(
                                     speed = speed,
                                     pingMillis = uiState.pingMillis,
                                     onStatusClick = { onAction(MainAction.TestCurrentServer) },
+                                    autoSwitch = autoSwitch,
+                                    onAutoSwitchChange = { mainViewModel.setAutoSwitch(it) },
+                                    onRouting = { onNavigate(MainDestination.Routing) },
+                                    onTelegram = { com.v2ray.ang.util.Utils.openUri(context, com.v2ray.ang.AppConfig.TG_CHANNEL_URL) },
                                     bottomExtra = {
                                         SelectedServerCard(name = selectedName, onClick = { bottomTab = MainTab.Configs })
                                     },
@@ -413,6 +417,7 @@ fun MainScreen(
                             onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
                             onShareServer = { guid, profile -> shareTarget = Triple(guid, profile, false) },
                             onMoreServer = { guid, profile -> shareTarget = Triple(guid, profile, true) },
+                            onRemoveServer = removeServer,
                             onLocateHandled = { onAction(MainAction.LocateHandled) },
                             contentPadding = PaddingValues(start = 0.dp, top = 2.dp, end = 0.dp, bottom = 16.dp),
                         )

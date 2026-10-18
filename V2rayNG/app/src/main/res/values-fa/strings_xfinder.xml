@@ -184,4 +184,5 @@
     <string name="mx_update_ready">دانلود تمام شد. در حال نصب…</string>
     <string name="mx_update_failed">بروزرسانی دانلود نشد. اینترنت را بررسی کن و دوباره امتحان کن.</string>
     <string name="mx_update_install">نصب</string>
+    <string name="mx_stat_duration">مدت اتصال</string>
 </resources>
