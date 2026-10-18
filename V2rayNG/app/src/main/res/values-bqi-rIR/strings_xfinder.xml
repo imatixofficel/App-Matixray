@@ -39,7 +39,7 @@
     <string name="mx_psiphon_state_off">قطع</string>
     <string name="mx_psiphon_state_on">متصل</string>
     <string name="mx_about_title">درباره Matixray</string>
-    <string name="mx_about_body">Matixray نسخه ارتقا‌یافته V2Ray هسته، برا اتصال سریع و پایدار.\n\nامکانات:\n• کانفیگ رایگان: با یه ضربه رو «گرتن کانفیگ»، لیستای Mahsa NG دانلود بو، همه رو اینترنت خودت تست بونن و فقط سریع‌ترین سالما (حدود ۲۰ تا) تو گروه رایگان می‌مونن.\n• گروه و اشتراک، Xfinder و اسکنر آی‌پی، اتصال خودکار.\n• پروتکلا: VMess، VLESS، Trojan، Shadowsocks، Hysteria2 و بیشتر رو هسته Xray.\n\nکانفیگای رایگان از لیستای باز Mahsa NG میان. بو کانال تلگرام ما بپیوند.</string>
+    <string name="mx_about_body">Matixray نسخه ارتقا‌یافته V2Ray هسته، برا اتصال سریع و پایدار.\n\n• کانفیگ رایگان: با یه ضربه رو «گرتن کانفیگ»، برنامه اول از لیستای Xfinder، بعد Mahsa NG و چن منبع باز دیگه کانفیگ جم کنه، همه رو اینترنت خودت تست بونن و فقط سریع‌ترین سالما (حدود ۲۰ تا) تو گروه رایگان می‌مونن.\n• Xfinder و اسکنر آی‌پی، گروه و اشتراک، اتصال خودکار.\n• پروتکلا: VMess، VLESS، Trojan، Shadowsocks، Hysteria2 و بیشتر رو هسته Xray.\n\nبو کانال تلگرام ما بپیوند.</string>
     <string name="mx_telegram_button">عضویت در کانال تلگرام</string>
     <string name="mx_remove_sni_title">حذف SNI</string>
     <string name="mx_remove_sni_summary">در اتصال TLS نام سرور (SNI) فرستاده نمی‌شود</string>
@@ -77,7 +77,7 @@
     <string name="mx_group_deleted">گروه حذف بی</string>
     <string name="mx_fetch_kept">%1$d کانفیگ سالم موند و %2$d کانفیگ بی‌جواب حذف بی</string>
     <string name="mx_fetch_only_working_title">فقط کانفیگ‌ای سالم نگه داشته بو</string>
-    <string name="mx_fetch_only_working_hint">پس از «گرتن کانفیگ» برنامه لیستای Mahsa NG رو دانلود کنه، سرورای مرده رو کنار بنه و بقیه رو با تست اتصال واقعی رو اینترنت خودت بسنجه. فقط سریع‌ترین سالما (حدود ۲۰ تا) می‌مونن. خاموشش بکنی، همه چی نگه داشته بو.</string>
+    <string name="mx_fetch_only_working_hint">پس از «گرتن کانفیگ» برنامه لیستای Xfinder رو دانلود کنه، سرورای مرده رو کنار بنه و بقیه رو با تست اتصال واقعی رو اینترنت خودت بسنجه. فقط سریع‌ترین سالما (حدود ۲۰ تا) می‌مونن. خاموشش بکنی، همه چی نگه داشته بو.</string>
     <string name="mx_import_target_title">اضافه کردن به</string>
     <string name="mx_import_target_new">گروه تازه</string>
     <string name="mx_free_badge">رایگان</string>

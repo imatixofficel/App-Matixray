@@ -39,7 +39,7 @@
     <string name="mx_psiphon_state_off">বন্ধ</string>
     <string name="mx_psiphon_state_on">সংযুক্ত</string>
     <string name="mx_about_title">Matixray সম্পর্কে</string>
-    <string name="mx_about_body">Matixray হলো V2Ray-এর উন্নত সংস্করণ, দ্রুত ও স্থিতিশীল সংযোগের জন্য।\n\n• বিনামূল্যে কনফিগ: “কনফিগ আনুন” চাপলে Mahsa NG-এর পাবলিক তালিকা নামে, আপনার সংযোগে পরীক্ষা হয় এবং সবচেয়ে দ্রুত কার্যকরগুলো (প্রায় ৩০টি) ফ্রি গ্রুপে থাকে।\n• গ্রুপ ও সাবস্ক্রিপশন, Xfinder ও আইপি স্ক্যানার, অটো-কানেক্ট।\n• প্রোটোকল: VMess, VLESS, Trojan, Shadowsocks, Hysteria2 ইত্যাদি, Xray কোরে।\n\nবিনামূল্যে কনফিগ Mahsa NG-এর উন্মুক্ত তালিকা থেকে আসে। আমাদের টেলিগ্রাম চ্যানেলে যোগ দিন।</string>
+    <string name="mx_about_body">Matixray হলো V2Ray-এর উন্নত সংস্করণ, দ্রুত ও স্থিতিশীল সংযোগের জন্য।\n\n• বিনামূল্যে কনফিগ: “কনফিগ আনুন” চাপলে অ্যাপ প্রথমে Xfinder তালিকা, তারপর Mahsa NG ও অন্যান্য উন্মুক্ত তালিকা থেকে কনফিগ সংগ্রহ করে, আপনার সংযোগে পরীক্ষা করে এবং সবচেয়ে দ্রুত কার্যকরগুলো (প্রায় ২০টি) ফ্রি গ্রুপে রাখে।\n• Xfinder ও আইপি স্ক্যানার, গ্রুপ ও সাবস্ক্রিপশন, অটো-কানেক্ট।\n• প্রোটোকল: VMess, VLESS, Trojan, Shadowsocks, Hysteria2 ইত্যাদি, Xray কোরে।\n\nআমাদের টেলিগ্রাম চ্যানেলে যোগ দিন।</string>
     <string name="mx_telegram_button">টেলিগ্রাম চ্যানেলে যোগ দিন</string>
     <string name="mx_remove_sni_title">SNI সরান</string>
     <string name="mx_remove_sni_summary">TLS সংযোগে সার্ভারের নাম (SNI) পাঠানো হয় না</string>
@@ -77,7 +77,7 @@
     <string name="mx_group_deleted">গ্রুপ মুছে ফেলা হয়েছে</string>
     <string name="mx_fetch_kept">%1$dটি কার্যকর কনফিগ রাখা হয়েছে, সাড়া না দেওয়া %2$dটি মুছে ফেলা হয়েছে</string>
     <string name="mx_fetch_only_working_title">শুধু কার্যকর কনফিগ রাখুন</string>
-    <string name="mx_fetch_only_working_hint">“কনফিগ আনুন”-এর পর অ্যাপ Mahsa NG-এর তালিকা নামায়, যেসব সার্ভার সংযোগই খোলে না সেগুলো বাদ দেয় এবং বাকিগুলো আপনার নেটওয়ার্কে বাস্তব পরীক্ষায় যাচাই করে। শুধু সবচেয়ে দ্রুত কার্যকরগুলো (প্রায় ৩০টি) থাকে, বাকিগুলো মুছে যায়। বন্ধ করলে সব ডাউনলোড করা কনফিগ থাকবে।</string>
+    <string name="mx_fetch_only_working_hint">“কনফিগ আনুন”-এর পর অ্যাপ Xfinder-এর তালিকা নামায়, যেসব সার্ভার সংযোগই খোলে না সেগুলো বাদ দেয় এবং বাকিগুলো আপনার নেটওয়ার্কে বাস্তব পরীক্ষায় যাচাই করে। শুধু সবচেয়ে দ্রুত কার্যকরগুলো (প্রায় ৩০টি) থাকে, বাকিগুলো মুছে যায়। বন্ধ করলে সব ডাউনলোড করা কনফিগ থাকবে।</string>
     <string name="mx_import_target_title">যোগ করুন</string>
     <string name="mx_import_target_new">নতুন গ্রুপ</string>
     <string name="mx_free_badge">বিনামূল্যে</string>

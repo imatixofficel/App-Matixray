@@ -39,7 +39,7 @@
     <string name="mx_psiphon_state_off">已关闭</string>
     <string name="mx_psiphon_state_on">已连接</string>
     <string name="mx_about_title">关于 Matixray</string>
-    <string name="mx_about_body">Matixray 是 V2Ray 的升级版本，用于快速稳定地连接。\n\n• 免费配置：点击“获取配置”会下载 Mahsa NG 的公开列表，在你的网络上测试，并在免费分组中只保留最快的可用配置（约 20 个）。\n• 分组与订阅、Xfinder 与 IP 扫描器、自动连接。\n• 协议：VMess、VLESS、Trojan、Shadowsocks、Hysteria2 等，基于 Xray 内核。\n\n免费配置来自 Mahsa NG 的开放列表。欢迎加入我们的 Telegram 频道。</string>
+    <string name="mx_about_body">Matixray 是 V2Ray 的升级版本，用于快速稳定地连接。\n\n• 免费配置：点击“获取配置”，应用会先从 Xfinder 列表，再从 Mahsa NG 和其他公开列表收集配置，在你的网络上逐个测试，并在免费分组中只保留最快的可用配置（约 20 个）。\n• Xfinder 与 IP 扫描器、分组与订阅、自动连接。\n• 协议：VMess、VLESS、Trojan、Shadowsocks、Hysteria2 等，基于 Xray 内核。\n\n欢迎加入我们的 Telegram 频道。</string>
     <string name="mx_telegram_button">加入 Telegram 频道</string>
     <string name="mx_remove_sni_title">移除 SNI</string>
     <string name="mx_remove_sni_summary">TLS 连接中不发送服务器名称（SNI）</string>
@@ -77,7 +77,7 @@
     <string name="mx_group_deleted">分组已删除</string>
     <string name="mx_fetch_kept">保留 %1$d 个可用配置，删除 %2$d 个无响应配置</string>
     <string name="mx_fetch_only_working_title">仅保留可用配置</string>
-    <string name="mx_fetch_only_working_hint">点击“获取配置”后，应用会下载 Mahsa NG 的列表，剔除无法建立连接的服务器，再用真实连接测试检测其余配置。只保留最快的可用配置（约 20 个），其余删除。关闭后将保留全部下载内容。</string>
+    <string name="mx_fetch_only_working_hint">点击“获取配置”后，应用会下载 Xfinder 的列表，剔除无法建立连接的服务器，再用真实连接测试检测其余配置。只保留最快的可用配置（约 20 个），其余删除。关闭后将保留全部下载内容。</string>
     <string name="mx_import_target_title">添加到</string>
     <string name="mx_import_target_new">新建分组</string>
     <string name="mx_free_badge">免费</string>

@@ -39,7 +39,7 @@
     <string name="mx_psiphon_state_off">Tắt</string>
     <string name="mx_psiphon_state_on">Đã kết nối</string>
     <string name="mx_about_title">Giới thiệu Matixray</string>
-    <string name="mx_about_body">Matixray là bản nâng cấp của V2Ray để kết nối nhanh và ổn định.\n\n• Cấu hình miễn phí: nhấn “Lấy cấu hình” để tải danh sách công khai của Mahsa NG, kiểm tra trên kết nối của bạn và chỉ giữ cấu hình hoạt động nhanh nhất (khoảng 20) trong nhóm Miễn phí.\n• Nhóm và đăng ký, Xfinder và trình quét IP, tự động kết nối.\n• Giao thức: VMess, VLESS, Trojan, Shadowsocks, Hysteria2... trên nhân Xray.\n\nCấu hình miễn phí đến từ danh sách mở của Mahsa NG. Hãy tham gia kênh Telegram của chúng tôi.</string>
+    <string name="mx_about_body">Matixray là bản nâng cấp của V2Ray để kết nối nhanh và ổn định.\n\n• Cấu hình miễn phí: nhấn “Lấy cấu hình”, ứng dụng thu thập cấu hình trước hết từ danh sách Xfinder, sau đó từ Mahsa NG và các danh sách mở khác, kiểm tra trên kết nối của bạn và chỉ giữ cấu hình hoạt động nhanh nhất (khoảng 20) trong nhóm Miễn phí.\n• Xfinder và trình quét IP, nhóm và đăng ký, tự động kết nối.\n• Giao thức: VMess, VLESS, Trojan, Shadowsocks, Hysteria2... trên nhân Xray.\n\nHãy tham gia kênh Telegram của chúng tôi.</string>
     <string name="mx_telegram_button">Tham gia kênh Telegram</string>
     <string name="mx_remove_sni_title">Xóa SNI</string>
     <string name="mx_remove_sni_summary">Tên máy chủ (SNI) không được gửi trong kết nối TLS</string>
@@ -77,7 +77,7 @@
     <string name="mx_group_deleted">Đã xóa nhóm</string>
     <string name="mx_fetch_kept">Giữ lại %1$d cấu hình hoạt động, xóa %2$d cấu hình không phản hồi</string>
     <string name="mx_fetch_only_working_title">Chỉ giữ cấu hình hoạt động</string>
-    <string name="mx_fetch_only_working_hint">Sau “Lấy cấu hình”, ứng dụng tải danh sách của Mahsa NG, loại máy chủ không mở được kết nối rồi kiểm tra phần còn lại bằng bài test thực trên mạng của bạn. Chỉ giữ các cấu hình nhanh nhất (khoảng 20), phần còn lại bị xóa. Tắt để giữ mọi thứ đã tải.</string>
+    <string name="mx_fetch_only_working_hint">Sau “Lấy cấu hình”, ứng dụng tải danh sách của Xfinder, loại máy chủ không mở được kết nối rồi kiểm tra phần còn lại bằng bài test thực trên mạng của bạn. Chỉ giữ các cấu hình nhanh nhất (khoảng 20), phần còn lại bị xóa. Tắt để giữ mọi thứ đã tải.</string>
     <string name="mx_import_target_title">Thêm vào</string>
     <string name="mx_import_target_new">Nhóm mới</string>
     <string name="mx_free_badge">Miễn phí</string>

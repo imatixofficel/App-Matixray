@@ -57,7 +57,7 @@
 
     <!-- About -->
     <string name="mx_about_title">About Matixray</string>
-    <string name="mx_about_body">Matixray is an upgraded build of V2Ray, made to connect fast and keep you connected.\n\nWhat it gives you:\n• Free configs: one tap on “Get configs” downloads Mahsa NG\'s public lists, tests every config on your own connection and keeps only the fastest working ones (about 20) in the Free group.\n• Groups and subscriptions: your own groups, subscription links, refresh and delete per group.\n• Xfinder and the IP scanner: finds clean IPs and can mix them into your configs.\n• Auto-connect: if the server drops, the app switches to the best working one.\n• Protocols: VMess, VLESS, Trojan, Shadowsocks, Hysteria2 and more, on the Xray core, with Psiphon and Aether.\n\nThe free configs come from the open lists of Mahsa NG and its community, whom we thank. Join our Telegram channel for news and updates.</string>
+    <string name="mx_about_body">Matixray is an upgraded build of V2Ray, made to connect fast and keep you connected.\n\n• Free configs: tap “Get configs” and the app gathers configs from the Xfinder lists first, then Mahsa NG and other open lists, tests every one on your own connection and keeps only the fastest working ones (about 20) in the Free group.\n• Xfinder and the IP scanner: finds clean IPs and can mix them into your configs.\n• Groups and subscriptions: your own groups, subscription links, refresh and delete per group.\n• Auto-connect: if the server drops, the app switches to the best working one.\n• Protocols: VMess, VLESS, Trojan, Shadowsocks, Hysteria2 and more, on the Xray core, with Psiphon and Aether.\n\nJoin our Telegram channel for news and updates.</string>
     <string name="mx_telegram_button">Join the Telegram channel</string>
     <string name="mx_remove_sni_title">Remove SNI</string>
     <string name="mx_remove_sni_summary">The server name (SNI) is not sent in TLS connections</string>
@@ -183,7 +183,7 @@
     <string name="mx_group_deleted">Group deleted</string>
     <string name="mx_fetch_kept">Kept %1$d working configs, removed %2$d that did not respond</string>
     <string name="mx_fetch_only_working_title">Keep only working configs</string>
-    <string name="mx_fetch_only_working_hint">After “Get configs” the app downloads Mahsa NG\'s lists, drops the servers that do not even open a connection, then tests the rest with a real connection test on your own network. Only the fastest working configs (about 20) stay in the Free group and the dead ones are deleted, so every config you see should connect. This takes a short while. Turn it off to keep everything that was downloaded, working or not.</string>
+    <string name="mx_fetch_only_working_hint">After “Get configs” the app downloads the public lists, drops the servers that do not even open a connection, then tests the rest with a real connection test on your own network. Only the fastest working configs (about 20) stay in the Free group and the dead ones are deleted, so every config you see should connect. This takes a short while. Turn it off to keep everything that was downloaded, working or not.</string>
     <string name="mx_import_target_title">Add to</string>
     <string name="mx_import_target_new">New group</string>
     <string name="mx_free_badge">Free</string>

@@ -39,7 +39,7 @@
     <string name="mx_psiphon_state_off">متوقف</string>
     <string name="mx_psiphon_state_on">متصل</string>
     <string name="mx_about_title">حول Matixray</string>
-    <string name="mx_about_body">Matixray نسخة مطوّرة من V2Ray للاتصال السريع والمستقر.\n\n• إعدادات مجانية: بنقرة على «جلب الإعدادات» تُحمَّل قوائم Mahsa NG العامة وتُختبر على اتصالك ويبقى الأسرع منها (نحو 20) في المجموعة المجانية.\n• المجموعات والاشتراكات، Xfinder وماسح IP، والاتصال التلقائي.\n• البروتوكولات: VMess وVLESS وTrojan وShadowsocks وHysteria2 على نواة Xray.\n\nالإعدادات المجانية من قوائم Mahsa NG المفتوحة. انضم إلى قناتنا على تلغرام.</string>
+    <string name="mx_about_body">Matixray نسخة مطوّرة من V2Ray للاتصال السريع والمستقر.\n\n• إعدادات مجانية: بنقرة على «جلب الإعدادات» يجمع التطبيق الإعدادات من قوائم Xfinder أولًا ثم Mahsa NG وقوائم مفتوحة أخرى، ويختبرها على اتصالك، ويُبقي الأسرع منها (نحو 20) في المجموعة المجانية.\n• Xfinder وماسح IP، المجموعات والاشتراكات، والاتصال التلقائي.\n• البروتوكولات: VMess وVLESS وTrojan وShadowsocks وHysteria2 على نواة Xray.\n\nانضم إلى قناتنا على تلغرام.</string>
     <string name="mx_telegram_button">انضم إلى قناة تلغرام</string>
     <string name="mx_remove_sni_title">إزالة SNI</string>
     <string name="mx_remove_sni_summary">لا يتم إرسال اسم الخادم (SNI) في اتصالات TLS</string>
@@ -77,7 +77,7 @@
     <string name="mx_group_deleted">تم حذف المجموعة</string>
     <string name="mx_fetch_kept">تم الاحتفاظ بـ %1$d إعدادات تعمل وحذف %2$d لم تستجب</string>
     <string name="mx_fetch_only_working_title">الاحتفاظ بالإعدادات العاملة فقط</string>
-    <string name="mx_fetch_only_working_hint">بعد «جلب الإعدادات» يحمّل التطبيق قوائم Mahsa NG ويستبعد الخوادم التي لا تفتح اتصالًا ثم يختبر الباقي باختبار اتصال حقيقي على شبكتك. يبقى الأسرع منها فقط (نحو 20) ويُحذف الباقي. أوقفه للاحتفاظ بكل ما تم تنزيله.</string>
+    <string name="mx_fetch_only_working_hint">بعد «جلب الإعدادات» يحمّل التطبيق قوائم Xfinder ويستبعد الخوادم التي لا تفتح اتصالًا ثم يختبر الباقي باختبار اتصال حقيقي على شبكتك. يبقى الأسرع منها فقط (نحو 20) ويُحذف الباقي. أوقفه للاحتفاظ بكل ما تم تنزيله.</string>
     <string name="mx_import_target_title">إضافة إلى</string>
     <string name="mx_import_target_new">مجموعة جديدة</string>
     <string name="mx_free_badge">مجاني</string>

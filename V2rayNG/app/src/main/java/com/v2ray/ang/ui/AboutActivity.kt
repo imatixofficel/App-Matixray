@@ -26,6 +26,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -99,6 +101,7 @@ fun AboutScreen(
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
         ) {
+            AboutBismillah()
             Text(
                 text = stringResource(R.string.mx_about_body),
                 style = MaterialTheme.typography.bodyMedium,
@@ -188,7 +191,7 @@ private fun TelegramButton(onClick: () -> Unit) {
             .fillMaxWidth()
             .pressScale(source)
             .clip(GlassPillShape)
-            .background(PrimaryGradient)
+            .background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFF2AABEE), Color(0xFF1C7ED6))))
             .clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick)
             .heightIn(min = 52.dp)
             .padding(horizontal = 20.dp, vertical = 12.dp),
@@ -207,6 +210,39 @@ private fun TelegramButton(onClick: () -> Unit) {
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.SemiBold,
             color = Color.White,
+        )
+    }
+}
+
+
+/** Matixray: "In the name of God" opens the About page, in large gradient lettering between two thin shining lines. */
+@Composable
+private fun AboutBismillah() {
+    val scheme = MaterialTheme.colorScheme
+    val brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
+        listOf(scheme.primary, androidx.compose.ui.graphics.Color(0xFF8B5CF6), androidx.compose.ui.graphics.Color(0xFF2DD4BF))
+    )
+    val line = androidx.compose.ui.graphics.Brush.horizontalGradient(
+        listOf(androidx.compose.ui.graphics.Color.Transparent, scheme.primary.copy(alpha = 0.7f), androidx.compose.ui.graphics.Color.Transparent)
+    )
+    androidx.compose.foundation.layout.Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+    ) {
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier.fillMaxWidth(0.7f).height(2.dp).background(line)
+        )
+        androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
+        Text(
+            text = stringResource(R.string.xf_splash_title),
+            style = MaterialTheme.typography.headlineMedium.copy(brush = brush),
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 1.sp,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+        androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier.fillMaxWidth(0.7f).height(2.dp).background(line)
         )
     }
 }
