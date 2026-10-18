@@ -93,7 +93,7 @@ fun MainConnectHero(
     // Matixray: the page is a plain list in one white card, as in V2Box (duration, upload, download, smart connect,
     // routing, community), the status line under it and, at the end, whatever the caller adds.
     val idle = stringResource(R.string.mx_stat_none)
-    val link = Color(0xFF1BA1C9)
+    val link = XfBlue
     val ink = scheme.onSurface
     Column(
         modifier = modifier
@@ -241,7 +241,7 @@ private fun HomeListRow(
                 text = label,
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold,
+                fontWeight = if (labelColor != Color.Unspecified) FontWeight.ExtraBold else FontWeight.Bold,
                 color = labelColor,
                 maxLines = 1,
             )

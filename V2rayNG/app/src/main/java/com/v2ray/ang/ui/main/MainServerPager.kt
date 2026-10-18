@@ -325,17 +325,17 @@ private fun ServerItemColumn(
 }
 
 /** Text turned a quarter circle up, for the protocol strip at the edge of a config card; it takes the room of the turned text. */
-private fun Modifier.verticalText(): Modifier = this
-    .layout { measurable, constraints ->
-        val placeable = measurable.measure(constraints.copy(minWidth = 0, minHeight = 0, maxWidth = Constraints.Infinity, maxHeight = Constraints.Infinity))
-        layout(placeable.height, placeable.width) {
-            placeable.place(
-                x = -(placeable.width / 2 - placeable.height / 2),
-                y = -(placeable.height / 2 - placeable.width / 2),
-            )
-        }
+private fun Modifier.verticalText(): Modifier = this.layout { measurable, constraints ->
+    val placeable = measurable.measure(
+        constraints.copy(minWidth = 0, minHeight = 0, maxWidth = Constraints.Infinity, maxHeight = Constraints.Infinity)
+    )
+    // The turned text is as wide as the unturned one is tall, and the other way round; the size is kept inside the strip.
+    val w = placeable.height.coerceIn(constraints.minWidth, constraints.maxWidth)
+    val h = placeable.width.coerceIn(constraints.minHeight, constraints.maxHeight)
+    layout(w, h) {
+        placeable.placeWithLayer((w - placeable.width) / 2, (h - placeable.height) / 2) { rotationZ = -90f }
     }
-    .rotate(-90f)
+}
 
 /**
  * The word written upward on the strip of a card. The strip is as tall as the card, so the long names (SHADOWSOCKS,
@@ -384,10 +384,10 @@ private fun PingPill(delayMillis: Long) {
 }
 
 /**
- * One config of the list, as V2Box draws it: a rounded strip with the protocol written upward, a white card with the
- * name on top and the address with the ping badge below, and a gray block at the end with three round white buttons
- * (edit, share, delete). The selected config has a light blue card and a solid blue strip. The card keeps the
- * left-to-right order of the design in every language.
+ * One config of the list, as V2Box draws it: a rounded strip with the protocol written upward, a card with the name on
+ * top and the address with the ping badge below, and a block at the end with three small round buttons (edit, share,
+ * delete). The selected config has a light blue card and a solid blue strip. The row has a fixed, low height so a long
+ * list stays compact, and it keeps the left-to-right order of the design in every language.
  */
 @Composable
 private fun ServerListItem(
@@ -402,21 +402,18 @@ private fun ServerListItem(
     } else {
         null
     }
-    val outer = RoundedCornerShape(16.dp)
-    val inner = RoundedCornerShape(12.dp)
+    val shape = RoundedCornerShape(14.dp)
     val protocol = protocolStripLabel(row.profile.configType)
     val mainColor = if (isSelected) ConfigInk else scheme.onSurface
     val subColor = if (isSelected) ConfigInk.copy(alpha = 0.65f) else scheme.onSurfaceVariant
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 14.dp, vertical = 4.dp)
+                .padding(horizontal = 12.dp, vertical = 3.dp)
                 .fillMaxWidth()
-                // At least 76 dp, taller when the name wraps or the font is enlarged: a fixed height cut the text off.
-                .heightIn(min = 76.dp)
-                .height(IntrinsicSize.Min)
-                .clip(outer)
-                .background(scheme.surfaceContainerHigh)
+                .height(60.dp)
+                .clip(shape)
+                .background(if (isSelected) ConfigSelectedCard else scheme.surface)
                 .semantics {
                     if (selectedStateDescription != null) {
                         stateDescription = selectedStateDescription
@@ -425,12 +422,11 @@ private fun ServerListItem(
                 .clickable { actions.select(row.guid) },
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Protocol strip
+            // Protocol strip: the word turned upward, as wide as one line of it
             Box(
                 modifier = Modifier
-                    .width(34.dp)
+                    .width(30.dp)
                     .fillMaxHeight()
-                    .clip(inner)
                     .background(if (isSelected) ConfigSelectedStrip else scheme.surfaceContainerHighest),
                 contentAlignment = Alignment.Center,
             ) {
@@ -438,7 +434,7 @@ private fun ServerListItem(
                     text = protocol,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp,
+                    letterSpacing = 0.3.sp,
                     color = if (isSelected) Color.White else scheme.onSurface,
                     maxLines = 1,
                     softWrap = false,
@@ -446,52 +442,45 @@ private fun ServerListItem(
                 )
             }
             // Card: name on top, address and ping below
-            Box(
+            Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .padding(start = 4.dp)
-                    .clip(inner)
-                    .background(if (isSelected) ConfigSelectedCard else scheme.surface),
+                    .padding(horizontal = 10.dp, vertical = 7.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = row.remarks,
-                            modifier = Modifier.weight(1f, fill = false),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = mainColor,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        if (row.profile.subscriptionId == AppConfig.FREE_SUBSCRIPTION_ID) FreeBadge(onBlue = false)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            text = row.statistics,
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = subColor,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        PingPill(row.testDelayMillis)
-                    }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = row.remarks,
+                        modifier = Modifier.weight(1f, fill = false),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = mainColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (row.profile.subscriptionId == AppConfig.FREE_SUBSCRIPTION_ID) FreeBadge(onBlue = false)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = row.statistics,
+                        modifier = Modifier.weight(1f),
+                        fontSize = 11.sp,
+                        color = subColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    PingPill(row.testDelayMillis)
                 }
             }
-            // Gray block with the round buttons
+            // Block with the round buttons
             Row(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .padding(horizontal = 8.dp),
+                    .background(if (isSelected) ConfigSelectedCard else scheme.surfaceContainerHigh)
+                    .padding(horizontal = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 if (doubleColumnDisplay) {
                     RailButton(R.drawable.ic_more_vert_24dp, stringResource(R.string.acc_more)) {
@@ -522,7 +511,7 @@ private fun RailButton(
     IconButton(
         onClick = onClick,
         modifier = Modifier
-            .size(36.dp)
+            .size(28.dp)
             .clip(CircleShape)
             .background(Color.White),
     ) {
@@ -530,7 +519,7 @@ private fun RailButton(
             painter = painterResource(iconRes),
             contentDescription = description,
             tint = ConfigInk,
-            modifier = Modifier.size(18.dp),
+            modifier = Modifier.size(15.dp),
         )
     }
 }
@@ -658,7 +647,7 @@ internal fun GroupedConfigsList(
                     onRefresh = { onRefreshGroup(entry.group.id) },
                 )
 
-                is ConfigListEntry.Config -> Box(modifier = Modifier.padding(horizontal = 6.dp)) {
+                is ConfigListEntry.Config -> Box(modifier = Modifier) {
                     ServerListItem(
                         row = entry.row,
                         isSelected = entry.row.guid == selectedGuid,
@@ -694,9 +683,10 @@ private fun GroupHeaderCard(
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 14.dp, vertical = 6.dp)
+                .padding(horizontal = 12.dp, vertical = 4.dp)
                 .fillMaxWidth()
-                .liquidGlass(shape, tint = if (selected) scheme.primary.copy(alpha = 0.07f) else Color.Unspecified)
+                .clip(shape)
+                .background(scheme.surface)
                 .then(if (selected) Modifier.border(1.dp, scheme.primary.copy(alpha = 0.6f), shape) else Modifier),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -706,18 +696,15 @@ private fun GroupHeaderCard(
                     .clip(shape)
                     .clickable(role = Role.Button, onClick = onToggle)
                     .semantics { stateDescription = stateText }
-                    .padding(start = 16.dp, top = 14.dp, bottom = 14.dp, end = 8.dp),
+                    .padding(start = 14.dp, top = 10.dp, bottom = 10.dp, end = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Canvas(modifier = Modifier.size(12.dp).graphicsLayer { rotationZ = angle }) {
-                    val triangle = Path().apply {
-                        moveTo(0f, 0f)
-                        lineTo(size.width, size.height / 2f)
-                        lineTo(0f, size.height)
-                        close()
-                    }
-                    drawPath(triangle, triangleColor)
-                }
+                Icon(
+                    painter = painterResource(R.drawable.ic_arrow_forward_24dp),
+                    contentDescription = null,
+                    tint = scheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp).graphicsLayer { rotationZ = angle },
+                )
                 Spacer(Modifier.width(12.dp))
                 Text(
                     text = "$name ($count)",

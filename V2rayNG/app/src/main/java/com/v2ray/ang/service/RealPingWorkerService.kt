@@ -61,7 +61,7 @@ class RealPingWorkerService(
     private val batch = UUID.randomUUID().toString()
 
     private companion object {
-        const val TCP_PRECHECK_TIMEOUT_MS = 3000
+        const val TCP_PRECHECK_TIMEOUT_MS = 2000
     }
 
     private val runningCount = AtomicInteger(0)

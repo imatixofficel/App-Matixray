@@ -182,7 +182,7 @@ fun SettingsScreen(
 
     var isBooted by rememberMmkvBool(AppConfig.PREF_IS_BOOTED, false)
     var delayTestUrl by rememberMmkvString(AppConfig.PREF_DELAY_TEST_URL, "")
-    var realPingConcurrency by rememberMmkvString(AppConfig.PREF_REAL_PING_CONCURRENCY, "16")
+    var realPingConcurrency by rememberMmkvString(AppConfig.PREF_REAL_PING_CONCURRENCY, "48")
     var ipApiUrl by rememberMmkvString(AppConfig.PREF_IP_API_URL, "")
 
     val isVpn = mode == VPN

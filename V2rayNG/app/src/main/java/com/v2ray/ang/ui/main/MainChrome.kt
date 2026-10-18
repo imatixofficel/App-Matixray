@@ -259,17 +259,47 @@ fun MainConnectionBar(
     }
     LaunchedEffect(isRunning) { if (!isRunning) testing = false }
 
+    // Matixray: the connection bar is a floating glass capsule: a see-through fill that is brighter on top, a wash of
+    // light from the upper-left corner and a bright rim, as the liquid glass of the cards, always on for this bar.
+    val dark = com.v2ray.ang.ui.compose.LocalDarkTheme.current
+    val barShape = RoundedCornerShape(30.dp)
+    val glassFill = if (dark) listOf(Color(0xD92A2A2E), Color(0xB31C1C1F)) else listOf(Color(0xE6FFFFFF), Color(0xB3F2F6FF))
+    val glassSheen = if (dark) Color(0x26FFFFFF) else Color(0xB3FFFFFF)
+    val glassRim = if (dark) Color(0x80FFFFFF) else Color(0xFFFFFFFF)
+    val glassRimFaint = if (dark) Color(0x1FFFFFFF) else Color(0x66C9D6F2)
     Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = scheme.surface,
-        shadowElevation = 6.dp,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+            .shadow(10.dp, barShape, ambientColor = Color(0x333B4A7A), spotColor = Color(0x333B4A7A))
+            .clip(barShape)
+            .background(Brush.verticalGradient(glassFill))
+            .drawBehind {
+                drawRect(
+                    Brush.linearGradient(
+                        colors = listOf(glassSheen, Color.Transparent),
+                        start = androidx.compose.ui.geometry.Offset.Zero,
+                        end = androidx.compose.ui.geometry.Offset(size.width * 0.6f, size.height * 1.4f),
+                    ),
+                )
+            }
+            .border(
+                1.2.dp,
+                Brush.linearGradient(
+                    listOf(glassRim, glassRimFaint, glassRimFaint, glassRim.copy(alpha = glassRim.alpha * 0.7f)),
+                    start = androidx.compose.ui.geometry.Offset.Zero,
+                    end = androidx.compose.ui.geometry.Offset.Infinite,
+                ),
+                barShape,
+            ),
+        color = Color.Transparent,
     ) {
       // Matixray: the round button is always at the right, a little in from the edge, in every language.
       CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 12.dp, end = 26.dp, top = 6.dp, bottom = 6.dp),
+                .padding(start = 12.dp, end = 14.dp, top = 2.dp, bottom = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {

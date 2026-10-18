@@ -64,7 +64,6 @@ private val generalItems = listOf(
     MainDestination.Settings,
     MainDestination.Language,
     MainDestination.Subscriptions,
-    MainDestination.PerAppProxy,
     MainDestination.Routing,
     MainDestination.UserAssets,
 )
@@ -131,27 +130,6 @@ fun MainSettingsTab(
                     if (i > 0) RowDivider()
                     NavRow(item, showNew = updateAvailable && item == MainDestination.CheckUpdate, onClick = { onNavigate(item) })
                 }
-            }
-
-            SectionLabel(stringResource(R.string.mx_settings_configs))
-            SettingsCard {
-                IspRow(isp = isp, onIspChange = onIspChange)
-                RowDivider()
-                SwitchRow(
-                    iconRes = R.drawable.ic_cloud_download_24dp,
-                    label = stringResource(R.string.mx_fetch_only_working_title),
-                    hint = stringResource(R.string.mx_fetch_only_working_hint),
-                    checked = fetchOnlyWorking,
-                    onCheckedChange = onFetchOnlyWorkingChange,
-                )
-                RowDivider()
-                SwitchRow(
-                    iconRes = R.drawable.ic_cloud_download_24dp,
-                    label = stringResource(R.string.mx_auto_fetch_title),
-                    hint = stringResource(R.string.mx_auto_fetch_hint),
-                    checked = autoFetch,
-                    onCheckedChange = onAutoFetchChange,
-                )
             }
 
             SectionLabel(stringResource(R.string.mx_settings_look))
@@ -392,8 +370,8 @@ private fun LinkRow(@DrawableRes iconRes: Int, label: String, onClick: () -> Uni
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.ExtraBold,
+            color = XfBlue,
             modifier = Modifier.weight(1f),
         )
     }

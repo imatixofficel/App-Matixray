@@ -79,12 +79,11 @@ fun MainConfigsHeader(
     MainPageHeader(
         subtitle = stringResource(R.string.mx_nav_configs),
         compact = true,
-        leading = {
-            HeaderIcon(R.drawable.ic_qu_scan_24dp, R.string.menu_item_import_config_qrcode) {
-                onAction(MainAction.ImportQRcode)
-            }
-        },
     ) {
+        // Matixray: the scan button is at the right, next to the add button and the menu.
+        HeaderIcon(R.drawable.ic_qu_scan_24dp, R.string.menu_item_import_config_qrcode) {
+            onAction(MainAction.ImportQRcode)
+        }
         Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
             HeaderIcon(
                 iconRes = R.drawable.ic_add_24dp,
