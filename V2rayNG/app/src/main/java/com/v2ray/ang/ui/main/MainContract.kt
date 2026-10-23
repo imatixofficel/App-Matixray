@@ -133,6 +133,9 @@ sealed interface MainAction {
     /** Matixray: brings one group up to date: a subscription is downloaded again, the free group is fetched anew, any other group is pinged. */
     data class RefreshGroup(val groupId: String) : MainAction
 
+    /** Matixray: the speed button of a group card: tests the real ping of the configs of that group only. */
+    data class PingGroup(val groupId: String) : MainAction
+
     /** Matixray: removes the group [groupId] with every config in it (the Default group stays). */
     data class RemoveGroup(val groupId: String) : MainAction
 

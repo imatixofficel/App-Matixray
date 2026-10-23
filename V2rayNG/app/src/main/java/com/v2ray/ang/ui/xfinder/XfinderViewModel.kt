@@ -7,6 +7,9 @@ import com.v2ray.ang.ui.base.BaseViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,12 +18,26 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 enum class XfinderSource(val url: String, val label: String) {
-    TOP20(XfinderSources.TOP20_URL, "top20"),
     ALL(XfinderSources.ALL_URL, "all"),
+    TOP20(XfinderSources.TOP20_URL, "top20"),
+    VLESS(XfinderSources.VLESS_URL, "vless"),
+    VMESS(XfinderSources.VMESS_URL, "vmess"),
+    TROJAN(XfinderSources.TROJAN_URL, "trojan"),
+    WIREGUARD(XfinderSources.WIREGUARD_URL, "wireguard"),
 }
 
+/** The lists that held at least one config, in their usual order: an empty or unreachable list is not offered. */
+fun availableXfinderSources(results: Map<XfinderSource, List<XfinderConfig>>): List<XfinderSource> =
+    XfinderSource.entries.filter { results[it].orEmpty().isNotEmpty() }
+
+/** The list to show: [current] when it is still offered, else the first one that is, else null (nothing to show). */
+fun pickXfinderSource(current: XfinderSource, available: List<XfinderSource>): XfinderSource? =
+    if (current in available) current else available.firstOrNull()
+
 data class XfinderUiState(
-    val source: XfinderSource = XfinderSource.TOP20,
+    val source: XfinderSource = XfinderSource.ALL,
+    /** The lists offered as tabs; all of them until the first load tells which ones are empty. */
+    val sources: List<XfinderSource> = XfinderSource.entries,
     val items: List<XfinderConfig> = emptyList(),
     val isLoading: Boolean = false,
     val hasError: Boolean = false,
@@ -36,44 +53,74 @@ class XfinderViewModel(application: Application) : BaseViewModel(application) {
 
     private var loadJob: Job? = null
 
+    /** What each list held at the last load (deduplicated, fastest first); switching tabs reads from here. */
+    private var loaded: Map<XfinderSource, List<XfinderConfig>> = emptyMap()
+
     init {
-        load(XfinderSource.TOP20)
+        loadAll()
     }
 
     fun selectSource(source: XfinderSource) {
-        if (source == _uiState.value.source && !_uiState.value.hasError) return
-        load(source)
+        val state = _uiState.value
+        if (source == state.source && !state.hasError) return
+        if (source !in state.sources) return
+        _uiState.update { it.copy(source = source, items = loaded[source].orEmpty(), hasError = false) }
     }
 
-    fun refresh() = load(_uiState.value.source)
+    fun refresh() = loadAll()
 
-    private fun load(source: XfinderSource) {
-        // A newer request supersedes the running one, so a slow "all" never overwrites "top 20".
+    /** Reads every list at once, so the tabs can leave out the ones that came back empty. */
+    private fun loadAll() {
+        // A newer request supersedes the running one.
         loadJob?.cancel()
-        _uiState.update { it.copy(source = source, isLoading = true, hasError = false) }
+        _uiState.update { it.copy(isLoading = true, hasError = false) }
         loadJob = viewModelScope.launch {
             try {
-                XfinderLogStore.info("fetch ${source.label}: ${source.url}")
-                val text = repository.fetchText(source.url)
-                val parsed = withContext(Dispatchers.Default) { XfinderParser.parse(text) }
-                if (text == null || parsed.isEmpty()) {
-                    XfinderLogStore.error("fetch ${source.label}: failed or empty")
-                    _uiState.update { it.copy(items = emptyList(), isLoading = false, hasError = true) }
+                val results = coroutineScope {
+                    XfinderSource.entries.map { source -> async { source to loadOne(source) } }.awaitAll()
+                }.toMap()
+                loaded = results
+                val available = availableXfinderSources(results)
+                val shown = pickXfinderSource(_uiState.value.source, available)
+                if (shown == null) {
+                    XfinderLogStore.error("fetch: every list failed or is empty")
+                    _uiState.update { it.copy(sources = emptyList(), items = emptyList(), isLoading = false, hasError = true) }
                 } else {
-                    XfinderLogStore.info("fetch ${source.label}: ${parsed.size} configs")
-                    _uiState.update { it.copy(items = parsed, isLoading = false, hasError = false) }
+                    _uiState.update {
+                        it.copy(source = shown, sources = available, items = results[shown].orEmpty(), isLoading = false, hasError = false)
+                    }
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (e: Exception) {
-                XfinderLogStore.error("fetch ${source.label}: ${e.javaClass.simpleName}")
-                _uiState.update { it.copy(items = emptyList(), isLoading = false, hasError = true) }
+                XfinderLogStore.error("fetch: ${e.javaClass.simpleName}")
+                _uiState.update { it.copy(sources = emptyList(), items = emptyList(), isLoading = false, hasError = true) }
             }
         }
     }
 
+    /** One list's configs; empty when it could not be downloaded or holds none. */
+    private suspend fun loadOne(source: XfinderSource): List<XfinderConfig> {
+        return try {
+            XfinderLogStore.info("fetch ${source.label}: ${source.url}")
+            val text = repository.fetchText(source.url)
+            val parsed = withContext(Dispatchers.Default) { XfinderParser.parse(text) }
+            if (parsed.isEmpty()) {
+                XfinderLogStore.error("fetch ${source.label}: failed or empty, not listed")
+            } else {
+                XfinderLogStore.info("fetch ${source.label}: ${parsed.size} configs")
+            }
+            parsed
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (e: Exception) {
+            XfinderLogStore.error("fetch ${source.label}: ${e.javaClass.simpleName}")
+            emptyList()
+        }
+    }
+
     /**
-     * Adds the Xfinder top 20 link as the subscription "Matix | Xfinder" in one tap (instead of adding configs one by
+     * Adds the Xfinder all link as the subscription "Matix | Xfinder" in one tap (instead of adding configs one by
      * one); the subscription then keeps itself up to date.
      */
     fun addSubscription() {

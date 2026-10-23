@@ -182,4 +182,16 @@ data class ProfileItem(
             remarks = "",
             description = null
         )
+
+    /**
+     * Matixray: what makes two profiles the same connection for the lists the app builds from public sources:
+     * protocol, address, port and user id (the UUID, or the password / key of the protocols that have no UUID).
+     * Names and transport options are left out, so the same server listed twice under two names is one entry.
+     */
+    fun connectionKey(): String = listOf(
+        configType.name,
+        server?.trim()?.lowercase().orEmpty(),
+        serverPort?.trim().orEmpty(),
+        (password ?: secretKey).orEmpty().trim(),
+    ).joinToString("|")
 }

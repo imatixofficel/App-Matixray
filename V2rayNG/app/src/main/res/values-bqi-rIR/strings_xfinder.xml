@@ -69,6 +69,9 @@
     <string name="mx_group_expanded">وا</string>
     <string name="mx_group_collapsed">بسته</string>
     <string name="mx_group_refresh">نو کردن %1$s</string>
+    <string name="mx_group_ping">تست پینگ %1$s</string>
+    <string name="mx_group_ping_stop">توقف تست %1$s</string>
+    <string name="mx_group_menu">گزینه‌های %1$s</string>
     <string name="mx_import_name_title">نوم گروه تازه</string>
     <string name="mx_import_name_hint">نوم گروه</string>
     <string name="mx_import_name_ok">ایزونی</string>

@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -75,18 +77,21 @@ fun XfinderConfigsScreen(onBack: () -> Unit, viewModel: XfinderViewModel) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                SourceButton(
-                    label = stringResource(R.string.xf_tab_top),
-                    selected = state.source == XfinderSource.TOP20,
-                    onClick = { viewModel.selectSource(XfinderSource.TOP20) },
-                    modifier = Modifier.weight(1f),
-                )
-                SourceButton(
-                    label = stringResource(R.string.xf_tab_all),
-                    selected = state.source == XfinderSource.ALL,
-                    onClick = { viewModel.selectSource(XfinderSource.ALL) },
-                    modifier = Modifier.weight(1f),
-                )
+                // Only the lists that held configs are offered; the row scrolls when they do not all fit.
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    state.sources.forEach { source ->
+                        SourceButton(
+                            label = sourceLabel(source),
+                            selected = state.source == source,
+                            onClick = { viewModel.selectSource(source) },
+                        )
+                    }
+                }
                 val refreshLabel = stringResource(R.string.xf_refresh)
                 IconButton(
                     onClick = viewModel::refresh,
@@ -155,6 +160,16 @@ private fun StatusMessage(text: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(text = text, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
+}
+
+@Composable
+private fun sourceLabel(source: XfinderSource): String = when (source) {
+    XfinderSource.ALL -> stringResource(R.string.xf_tab_all)
+    XfinderSource.TOP20 -> stringResource(R.string.xf_tab_top)
+    XfinderSource.VLESS -> stringResource(R.string.xf_tab_vless)
+    XfinderSource.VMESS -> stringResource(R.string.xf_tab_vmess)
+    XfinderSource.TROJAN -> stringResource(R.string.xf_tab_trojan)
+    XfinderSource.WIREGUARD -> stringResource(R.string.xf_tab_wireguard)
 }
 
 @Composable

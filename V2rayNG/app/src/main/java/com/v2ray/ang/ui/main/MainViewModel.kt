@@ -25,6 +25,7 @@ import kotlinx.coroutines.async
 import com.v2ray.ang.handler.SpeedtestManager
 import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.handler.IspChoice
+import com.v2ray.ang.handler.ConfigSource
 import com.v2ray.ang.handler.ConfigSources
 import com.v2ray.ang.extension.matchesPattern
 import com.v2ray.ang.extension.moveItem
@@ -187,6 +188,9 @@ class MainViewModel(
 
     /** True from the end of a "get configs" download until the tests it started finish; then the list is sorted. */
     private var sortAfterTests = false
+
+    /** The fallback lists of the running "get configs" run: read only when the first round's test leaves too few working configs. */
+    private var fallbackSources: List<ConfigSource> = emptyList()
 
     // "Connect to the best server when the server is cut": a probe of the current server every 25 s while connected;
     // two failed probes in a row start the same real-ping search as the auto-connect button.
@@ -644,6 +648,7 @@ class MainViewModel(
             is MainAction.RemoveGroup -> removeGroup(action.groupId)
             MainAction.DismissImportNaming -> _uiState.update { it.copy(pendingImport = null) }
             is MainAction.RefreshGroup -> refreshGroup(action.groupId)
+            is MainAction.PingGroup -> pingGroup(action.groupId)
             MainAction.LocateHandled -> consumeLocateTarget()
             is MainAction.MoveRefusalShown -> _uiState.update {
                 if (it.moveRefusal == action.refusal) it.copy(moveRefusal = null) else it
@@ -1015,6 +1020,13 @@ class MainViewModel(
      * Matixray: the refresh button of a group card. A group with a link is downloaded again, the free group is fetched
      * anew (and nothing else is touched), any other group gets its real ping tested.
      */
+    /** Matixray: the speed button of a group card: selects that group and tests the real ping of its configs only. */
+    private fun pingGroup(groupId: String) {
+        if (groupId.isEmpty() || _fetchState.value.busy) return
+        subscriptionIdChanged(groupId)
+        testAllRealPing()
+    }
+
     private fun refreshGroup(groupId: String) {
         if (groupId.isEmpty()) return
         if (groupId == AppConfig.FREE_SUBSCRIPTION_ID) {
@@ -1103,12 +1115,26 @@ class MainViewModel(
     }
 
     /**
-     * Reads every source of [ConfigSources], a few at a time, and adds the new configs one by one (each as its own
-     * profile, the list refreshing as they arrive), then tests the group and sorts the best first. A config the app
-     * already holds, or one that came twice, is dropped by the app's own duplicate identity.
+     * Matixray: counts what one "get configs" run keeps track of while it downloads: how many sources answered, how
+     * many of them held links, and how many new profiles were added.
+     */
+    private class FetchTally {
+        var done = 0
+        var reachable = 0
+        var added = 0
+    }
+
+    /**
+     * Reads the app's own sources of [ConfigSources] first, a few at a time, and adds the new configs one by one (each as
+     * its own profile, the list refreshing as they arrive), then tests the group and sorts the best first. The fallback
+     * lists are read only when that test leaves too few working configs (see [startFallbackRound]). A config the app
+     * already holds, or one that came twice, is dropped by its connection key (protocol, address, port and user id).
      */
     private fun fetchConfigs(silent: Boolean = false) {
-        val sources = ConfigSources.forIsp(MmkvManager.decodeSettingsString(AppConfig.PREF_ISP) ?: IspChoice.AUTO)
+        val (fallback, first) = ConfigSources.forIsp(MmkvManager.decodeSettingsString(AppConfig.PREF_ISP) ?: IspChoice.AUTO)
+            .partition { it.fallback }
+        val sources = first.ifEmpty { fallback }
+        val backup = if (first.isEmpty()) emptyList() else fallback
         _fetchState.value = ConfigFetchState(FetchPhase.Downloading, sourcesTotal = sources.size)
         restoreGroupAfterFetch = if (silent) _uiState.value.selectedGroupId else null
         fetchJob = viewModelScope.launch(ioDispatcher) {
@@ -1116,51 +1142,27 @@ class MainViewModel(
                 // Matixray: the fetched configs live in the free group, and only that group is cleared (when the first
                 // source answers, so a failed download keeps the old ones); the user's own groups are never touched.
                 val freeId = dataSource.ensureFreeGroup(dataSource.getString(R.string.mx_group_free))
-                var freeCleared = false
-                var seen = HashSet<ProfileItem>()
-                fun collectSeen() {
-                    seen = HashSet()
-                    dataSource.getServerGuidList("").forEach { guid ->
-                        val profile = dataSource.decodeServerConfig(guid) ?: return@forEach
-                        if (!profile.configType.isComplexType()) seen += profile.duplicateIdentity()
-                    }
-                }
-                collectSeen()
-                val importLock = Mutex()
-                var added = 0
-                var done = 0
-                var reachable = 0
-                var lastRefreshAt = 0L
-                ConfigFetcher.fetchAll(sources, enough = { added >= ENOUGH_CANDIDATES }) { result ->
-                    importLock.withLock {
-                        done++
-                        if (result.links.isNotEmpty()) reachable++
-                        if (!freeCleared && result.links.isNotEmpty()) {
-                            freeCleared = true
-                            dataSource.clearGroup(freeId)
-                            collectSeen()
-                        }
-                        currentCoroutineContext().ensureActive()
-                        val take = minOf(MAX_FETCH_PER_SOURCE, MAX_FETCH_TOTAL - added)
-                        if (take > 0) added += importFetchedBatch(result.links.take(take), seen, freeId)
-                        _fetchState.value = ConfigFetchState(FetchPhase.Downloading, done, sources.size, added)
-                    }
-                }
+                val tally = FetchTally()
+                downloadSources(sources, freeId, clearOld = true, tally)
                 currentCoroutineContext().ensureActive()
-                if (added > 0) {
+                if (tally.added > 0) {
                     // A quick TCP check first, many at a time: servers that do not even open a connection are dropped
                     // before the slower real test, which makes the whole run much shorter.
-                    _fetchState.value = ConfigFetchState(FetchPhase.Downloading, done, sources.size, added)
-                    added -= dropUnreachable(freeId)
+                    _fetchState.value = ConfigFetchState(FetchPhase.Downloading, tally.done, sources.size, tally.added)
+                    tally.added -= dropUnreachable(freeId)
                 }
                 currentCoroutineContext().ensureActive()
-                if (added <= 0) {
+                if (tally.added <= 0) {
+                    // Nothing came from the app's own lists: the fallback lists are the next try.
+                    if (backup.isNotEmpty() && startFallbackRound(backup, _fetchOnlyWorking.value, clearOld = true)) {
+                        return@launch
+                    }
                     _fetchState.value = ConfigFetchState()
                     restoreGroupAfterFetch = null
-                    if (!silent) toast(dataSource.getString(if (reachable == 0) R.string.mx_fetch_unreachable else R.string.mx_fetch_none))
+                    if (!silent) toast(dataSource.getString(if (tally.reachable == 0) R.string.mx_fetch_unreachable else R.string.mx_fetch_none))
                     return@launch
                 }
-                if (!silent) toast(dataSource.getString(R.string.mx_fetch_result, added, reachable, sources.size))
+                if (!silent) toast(dataSource.getString(R.string.mx_fetch_result, tally.added, tally.reachable, sources.size))
                 showFetchedGroup()
                 setupGroupTab(forceRefresh = true).join()
                 if (currentServers().isEmpty()) {
@@ -1170,9 +1172,10 @@ class MainViewModel(
                 // testAllRealPing starts with cancelAllPing, which clears the flag and the testing phase, so both
                 // are set after the call.
                 testAllRealPing()
-                _fetchState.value = ConfigFetchState(FetchPhase.Testing, done, sources.size, added)
+                _fetchState.value = ConfigFetchState(FetchPhase.Testing, tally.done, sources.size, tally.added)
                 sortAfterTests = true
                 purgeDeadAfterTests = _fetchOnlyWorking.value
+                fallbackSources = backup
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (e: Exception) {
@@ -1184,13 +1187,89 @@ class MainViewModel(
     }
 
     /**
-     * Opens a plain TCP connection to every config of the group [groupId], 40 at a time with a short timeout, and removes
-     * the ones that do not answer, then keeps only the [REAL_TEST_MAX] that answered fastest for the real test. Configs that run over UDP (hysteria, tuic, wireguard) cannot be checked this way and
-     * stay for the real test. Returns how many were removed.
+     * Reads [sources] all at once and adds their new configs to the free group [freeId], one source at a time as each
+     * answers. With [clearOld] the group is emptied when the first source that holds links answers, so a failed
+     * download keeps what the group had. [tally] is updated as it goes.
      */
-    private suspend fun dropUnreachable(groupId: String): Int = coroutineScope {
+    private suspend fun downloadSources(sources: List<ConfigSource>, freeId: String, clearOld: Boolean, tally: FetchTally) {
+        var freeCleared = !clearOld
+        var seen = collectSeenKeys()
+        val importLock = Mutex()
+        ConfigFetcher.fetchAll(sources, enough = { tally.added >= ENOUGH_CANDIDATES }) { result ->
+            importLock.withLock {
+                tally.done++
+                if (result.links.isNotEmpty()) tally.reachable++
+                if (!freeCleared && result.links.isNotEmpty()) {
+                    freeCleared = true
+                    dataSource.clearGroup(freeId)
+                    seen = collectSeenKeys()
+                }
+                currentCoroutineContext().ensureActive()
+                val take = minOf(MAX_FETCH_PER_SOURCE, MAX_FETCH_TOTAL - tally.added)
+                if (take > 0) tally.added += importFetchedBatch(result.links.take(take), seen, freeId)
+                _fetchState.value = ConfigFetchState(FetchPhase.Downloading, tally.done, sources.size, tally.added)
+            }
+        }
+    }
+
+    /** The connection keys of every profile the app holds: what a fetch must not add a second time. */
+    private fun collectSeenKeys(): HashSet<String> {
+        val keys = HashSet<String>()
+        dataSource.getServerGuidList("").forEach { guid ->
+            val profile = dataSource.decodeServerConfig(guid) ?: return@forEach
+            if (!profile.configType.isComplexType()) keys += profile.connectionKey()
+        }
+        return keys
+    }
+
+    /** How many configs of the free group answered the last real test. */
+    private fun countWorkingFetched(): Int =
+        dataSource.getServerGuidList(AppConfig.FREE_SUBSCRIPTION_ID)
+            .count { (dataSource.decodeAffiliationInfo(it)?.testDelayMillis ?: 0L) > 0L }
+
+    /**
+     * Matixray: the second round of a "get configs" run: reads the fallback [sources] into the free group, checks the new
+     * configs with the quick TCP test and starts the real test of the group again. With [clearOld] false the configs the
+     * first round found working stay (the dead ones are dropped); with it true the group is replaced, as in a first
+     * round. Returns false when the sources gave nothing new, so the caller finishes with what it already had.
+     */
+    private suspend fun startFallbackRound(sources: List<ConfigSource>, purge: Boolean, clearOld: Boolean): Boolean {
+        val freeId = AppConfig.FREE_SUBSCRIPTION_ID
+        if (!clearOld) {
+            dataSource.getServerGuidList(freeId)
+                .filter { (dataSource.decodeAffiliationInfo(it)?.testDelayMillis ?: 0L) <= 0L }
+                .forEach { dataSource.removeServer(it) }
+        }
+        val existing = dataSource.getServerGuidList(freeId).toHashSet()
+        _fetchState.value = ConfigFetchState(FetchPhase.Downloading, sourcesTotal = sources.size)
+        val tally = FetchTally()
+        downloadSources(sources, freeId, clearOld, tally)
+        currentCoroutineContext().ensureActive()
+        val fresh = dataSource.getServerGuidList(freeId).filter { it !in existing }.toHashSet()
+        if (fresh.isEmpty()) return false
+        _fetchState.value = ConfigFetchState(FetchPhase.Downloading, tally.done, sources.size, tally.added)
+        val dropped = dropUnreachable(freeId, fresh)
+        currentCoroutineContext().ensureActive()
+        if (fresh.size - dropped <= 0) return false
+        showFetchedGroup()
+        setupGroupTab(forceRefresh = true).join()
+        if (currentServers().isEmpty()) return false
+        testAllRealPing()
+        _fetchState.value = ConfigFetchState(FetchPhase.Testing, tally.done, sources.size, tally.added)
+        sortAfterTests = true
+        purgeDeadAfterTests = purge
+        return true
+    }
+
+    /**
+     * Opens a plain TCP connection to every config of the group [groupId] (only those in [only] when it is given),
+     * [TCP_PRECHECK_PARALLEL] at a time with a short timeout, and removes the ones that do not answer, then keeps only
+     * the [REAL_TEST_MAX] that answered fastest for the real test. Configs that run over UDP (hysteria, tuic,
+     * wireguard) cannot be checked this way and stay for the real test. Returns how many were removed.
+     */
+    private suspend fun dropUnreachable(groupId: String, only: Set<String>? = null): Int = coroutineScope {
         val gate = Semaphore(TCP_PRECHECK_PARALLEL)
-        val guids = dataSource.getServerGuidList(groupId)
+        val guids = dataSource.getServerGuidList(groupId).filter { only == null || it in only }
         // The connect time of each config that answered (a config that cannot be checked this way counts as 500 ms).
         val times = guids.map { guid ->
             async(ioDispatcher) {
@@ -1210,9 +1289,9 @@ class MainViewModel(
 
     /**
      * Adds all the share links of one source to the free group [groupId] in one import, then removes the profiles that
-     * the app already holds (the same identity as one in [seen]). Returns how many new profiles stayed.
+     * the app already holds (the same connection key as one in [seen]). Returns how many new profiles stayed.
      */
-    private suspend fun importFetchedBatch(links: List<String>, seen: MutableSet<ProfileItem>, groupId: String): Int {
+    private suspend fun importFetchedBatch(links: List<String>, seen: MutableSet<String>, groupId: String): Int {
         if (links.isEmpty()) return 0
         val before = dataSource.getServerGuidList(groupId).toHashSet()
         try {
@@ -1225,7 +1304,7 @@ class MainViewModel(
         var kept = 0
         dataSource.getServerGuidList(groupId).filter { it !in before }.forEach { guid ->
             val profile = dataSource.decodeServerConfig(guid)
-            if (profile == null || (!profile.configType.isComplexType() && !seen.add(profile.duplicateIdentity()))) {
+            if (profile == null || (!profile.configType.isComplexType() && !seen.add(profile.connectionKey()))) {
                 dataSource.removeServer(guid)
             } else {
                 kept++
@@ -1238,7 +1317,7 @@ class MainViewModel(
      * Adds one share link as a profile of the group [groupId] (the free group); false when the app could not read it or already holds
      * the same profile (the copy just made is removed again).
      */
-    private suspend fun importFetchedLink(link: String, seen: MutableSet<ProfileItem>, groupId: String): Boolean {
+    private suspend fun importFetchedLink(link: String, seen: MutableSet<String>, groupId: String): Boolean {
         val before = dataSource.getServerGuidList(groupId).toHashSet()
         val count = try {
             dataSource.importBatchConfig(link, groupId, true).first
@@ -1250,7 +1329,7 @@ class MainViewModel(
         if (count <= 0) return false
         val created = dataSource.getServerGuidList(groupId).firstOrNull { it !in before } ?: return false
         val profile = dataSource.decodeServerConfig(created)
-        if (profile != null && !profile.configType.isComplexType() && !seen.add(profile.duplicateIdentity())) {
+        if (profile != null && !profile.configType.isComplexType() && !seen.add(profile.connectionKey())) {
             dataSource.removeServer(created)
             return false
         }
@@ -1566,6 +1645,7 @@ class MainViewModel(
         autoConnectPending = false
         sortAfterTests = false
         purgeDeadAfterTests = false
+        fallbackSources = emptyList()
         if (_fetchState.value.phase == FetchPhase.Testing) _fetchState.value = ConfigFetchState()
         bulkTestJob?.cancel()
         bulkTestJob = null
@@ -1655,46 +1735,61 @@ class MainViewModel(
         resetTestStatus()
         finishAutoConnect()
         if (sortAfterTests) {
-            // The "get configs" run: the fresh configs are tested; the ones that did not answer are removed (when the
-            // setting asks for it) before they ever show in the list, then the best go first.
+            // The "get configs" run: the fresh configs are tested; when too few of them work, the fallback lists are
+            // read and tested too. Then the ones that did not answer are removed (when the setting asks for it)
+            // before they ever show in the list, and the best go first.
             sortAfterTests = false
             val purge = purgeDeadAfterTests
             purgeDeadAfterTests = false
-            viewModelScope.launch(ioDispatcher) {
-                try {
-                    if (purge) {
-                        val freeId = AppConfig.FREE_SUBSCRIPTION_ID
-                        val before = dataSource.getServerGuidList(freeId)
-                        val working = before
-                            .map { it to (dataSource.decodeAffiliationInfo(it)?.testDelayMillis ?: 0L) }
-                            .filter { it.second > 0L }
-                            .sortedBy { it.second }
-                            .take(FREE_KEEP_BEST)
-                            .map { it.first }
-                            .toHashSet()
-                        before.filter { it !in working }.forEach { dataSource.removeServer(it) }
-                        val kept = working.size
-                        toast(dataSource.getString(R.string.mx_fetch_kept, kept, before.size - kept))
-                    }
-                    MmkvManager.encodeSettings(AppConfig.PREF_FREE_LAST_FETCH, System.currentTimeMillis().toString())
-                    cacheMutex.withLock { groupDataCache.clear() }
-                    setupGroupTab(forceRefresh = true).join()
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (e: Exception) {
-                    LogUtil.e(AppConfig.TAG, "Removing the dead fetched configs failed", e)
-                } finally {
-                    // The list shows the free group again only now.
-                    _fetchState.value = ConfigFetchState()
-                    withContext(Dispatchers.Main) { restoreGroupIfNeeded() }
-                }
-                sortByTestResultsAsync()
+            val backup = fallbackSources
+            fallbackSources = emptyList()
+            fetchJob = viewModelScope.launch(ioDispatcher) {
+                val anotherRound = backup.isNotEmpty() &&
+                    countWorkingFetched() < MIN_WORKING_BEFORE_FALLBACK &&
+                    startFallbackRound(backup, purge, clearOld = false)
+                if (!anotherRound) finishFetchedRun(purge)
             }
         }
+
         viewModelScope.launch(ioDispatcher) {
             cacheMutex.withLock { groupDataCache.clear() }
             reloadAllGroups(_uiState.value.groups.map { it.id })
         }
+    }
+
+    /**
+     * The end of a "get configs" run: removes the configs that did not answer the test (when [purge]), keeps the
+     * [FREE_KEEP_BEST] fastest, shows the list again and sorts it by the test results, lowest delay first.
+     */
+    private suspend fun finishFetchedRun(purge: Boolean) {
+        try {
+            if (purge) {
+                val freeId = AppConfig.FREE_SUBSCRIPTION_ID
+                val before = dataSource.getServerGuidList(freeId)
+                val working = before
+                    .map { it to (dataSource.decodeAffiliationInfo(it)?.testDelayMillis ?: 0L) }
+                    .filter { it.second > 0L }
+                    .sortedBy { it.second }
+                    .take(FREE_KEEP_BEST)
+                    .map { it.first }
+                    .toHashSet()
+                before.filter { it !in working }.forEach { dataSource.removeServer(it) }
+                val kept = working.size
+                toast(dataSource.getString(R.string.mx_fetch_kept, kept, before.size - kept))
+            }
+            MmkvManager.encodeSettings(AppConfig.PREF_FREE_LAST_FETCH, System.currentTimeMillis().toString())
+            cacheMutex.withLock { groupDataCache.clear() }
+            setupGroupTab(forceRefresh = true).join()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (e: Exception) {
+            LogUtil.e(AppConfig.TAG, "Removing the dead fetched configs failed", e)
+        } finally {
+            // The list shows the free group again only now.
+            _fetchState.value = ConfigFetchState()
+            withContext(Dispatchers.Main) { restoreGroupIfNeeded() }
+        }
+        sortByTestResultsAsync()
     }
 
     fun triggerLocateSelectedServer() {
@@ -1758,12 +1853,17 @@ class MainViewModel(
         /** Matixray: limits of one "get configs" run, so the list and the tests that follow stay small. */
         private const val MAX_FETCH_TOTAL = 400
         private const val MAX_FETCH_PER_SOURCE = 25
-        private const val TCP_PRECHECK_PARALLEL = 60
-        /** How many configs go on to the real test after the quick check: the ones that answered fastest. */
-        private const val REAL_TEST_MAX = 60
-        private const val TCP_PRECHECK_TIMEOUT_MS = 1500
+        private const val TCP_PRECHECK_PARALLEL = 120
+        /**
+         * How many configs go on to the real test after the quick check: the ones that answered fastest. It equals the
+         * real-ping concurrency, so the whole real test is one wave instead of two.
+         */
+        private const val REAL_TEST_MAX = 48
+        private const val TCP_PRECHECK_TIMEOUT_MS = 1200
+        /** Fewer working configs than this after the first round's real test: the fallback lists are read too. */
+        private const val MIN_WORKING_BEFORE_FALLBACK = 20
         /** The download stops waiting for slow sources once this many configs are in. */
-        private const val ENOUGH_CANDIDATES = 140
+        private const val ENOUGH_CANDIDATES = 90
         private const val AUTO_FETCH_DELAY_MS = 6_000L
         private const val AUTO_FETCH_MAX_AGE_MS = 3 * 60 * 60 * 1000L
         /** How many tested configs the free group keeps: few, but the fastest ones that work. */

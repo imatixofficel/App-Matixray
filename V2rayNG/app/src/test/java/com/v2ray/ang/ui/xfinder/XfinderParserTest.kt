@@ -105,6 +105,49 @@ class XfinderParserTest {
     }
 
     @Test
+    fun sameConnectionUnderTwoNamesIsListedOnceWithTheLowerPing() {
+        val slow = "vless://id1@1.2.3.4:443?type=ws#Xfinder%20VLESS%20300ms"
+        val fast = "vless://id1@1.2.3.4:443?type=tcp#Xfinder%20VLESS%2080ms"
+        val otherUser = "vless://id2@1.2.3.4:443#Xfinder%20VLESS%20500ms"
+        val otherPort = "vless://id1@1.2.3.4:8443#Xfinder%20VLESS%20600ms"
+        val otherProtocol = "trojan://id1@1.2.3.4:443#Xfinder%20TROJAN%20700ms"
+        val list = XfinderParser.parse(listOf(slow, fast, otherUser, otherPort, otherProtocol).joinToString("\n"))
+        assertEquals(listOf(fast, otherUser, otherPort, otherProtocol), list.map { it.raw })
+    }
+
+    @Test
+    fun hostCaseDoesNotMakeANewConnection() {
+        val list = XfinderParser.parse("vless://id@Example.COM:443#a 10ms\nvless://id@example.com:443#b 20ms")
+        assertEquals(1, list.size)
+        assertEquals(10, list.single().pingMs)
+    }
+
+    @Test
+    fun vmessConnectionKeyUsesTheIdInsideTheJson() {
+        fun vmess(id: String, ps: String): String {
+            val json = """{"ps":"$ps","add":"h.example","port":"443","id":"$id"}"""
+            return "vmess://" + Base64.getEncoder().encodeToString(json.toByteArray())
+        }
+        val list = XfinderParser.parse(listOf(vmess("a", "one 50ms"), vmess("a", "two 60ms"), vmess("b", "three 70ms")).joinToString("\n"))
+        assertEquals(2, list.size)
+    }
+
+    @Test
+    fun listIsSortedFastestFirstWithUnknownPingLast() {
+        val list = XfinderParser.parse("vless://a@1.1.1.1:1#none\nvless://b@2.2.2.2:1#x 300ms\nvless://c@3.3.3.3:1#y 20ms")
+        assertEquals(listOf("3.3.3.3", "2.2.2.2", "1.1.1.1"), list.map { it.server })
+    }
+
+    @Test
+    fun wireguardLinkGetsItsOwnLabel() {
+        val c = XfinderParser.parseLine("wireguard://c2VjcmV0@162.159.192.1:2408?publickey=abc#Xfinder%20WG%2090ms")!!
+        assertEquals("WireGuard", c.protocol)
+        assertEquals("162.159.192.1", c.server)
+        assertEquals("2408", c.port)
+        assertEquals(90, c.pingMs)
+    }
+
+    @Test
     fun pingBucketsFollowTheColourRule() {
         assertEquals(PingLevel.NONE, pingLevelOf(null))
         assertEquals(PingLevel.GOOD, pingLevelOf(0))

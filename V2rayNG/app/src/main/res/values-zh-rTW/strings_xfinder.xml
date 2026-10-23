@@ -69,6 +69,9 @@
     <string name="mx_group_expanded">已展開</string>
     <string name="mx_group_collapsed">已收合</string>
     <string name="mx_group_refresh">更新 %1$s</string>
+    <string name="mx_group_ping">測試 %1$s 的延遲</string>
+    <string name="mx_group_ping_stop">停止測試 %1$s</string>
+    <string name="mx_group_menu">%1$s 的更多選項</string>
     <string name="mx_import_name_title">新群組名稱</string>
     <string name="mx_import_name_hint">群組名稱</string>
     <string name="mx_import_name_ok">新增</string>

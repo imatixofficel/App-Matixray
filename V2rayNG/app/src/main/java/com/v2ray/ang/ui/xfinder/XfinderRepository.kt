@@ -15,8 +15,12 @@ import kotlinx.coroutines.withContext
 
 /** Remote sources for the Xfinder and scanner tabs. */
 object XfinderSources {
-    const val TOP20_URL = "https://imatixofficel.github.io/Xfinder/output/top20.txt"
     const val ALL_URL = "https://imatixofficel.github.io/Xfinder/output/all.txt"
+    const val TOP20_URL = "https://imatixofficel.github.io/Xfinder/output/top20.txt"
+    const val VLESS_URL = "https://imatixofficel.github.io/Xfinder/output/vless.txt"
+    const val VMESS_URL = "https://imatixofficel.github.io/Xfinder/output/vmess.txt"
+    const val TROJAN_URL = "https://imatixofficel.github.io/Xfinder/output/trojan.txt"
+    const val WIREGUARD_URL = "https://imatixofficel.github.io/Xfinder/output/wireguard.txt"
     /** The name the Xfinder subscription gets in the subscription list. */
     const val SUBSCRIPTION_NAME = "Matix | Xfinder"
     const val SCANNER_URL = "https://imatixofficel.github.io/Scanner-matix/data/clean_ips.json"
@@ -77,19 +81,19 @@ class XfinderRepository {
     }
 
     /**
-     * Adds the Xfinder top 20 link as a subscription named [XfinderSources.SUBSCRIPTION_NAME] (the one already there,
-     * found by its link, when it was added before) and downloads its configs. Returns the number of configs it now
+     * Adds the Xfinder all link as a subscription named [XfinderSources.SUBSCRIPTION_NAME] (the one already there,
+     * found by its link or by the older top 20 link, when it was added before) and downloads its configs. Returns the number of configs it now
      * holds, [NOT_FETCHED] when the subscription is saved but the download failed (the updater will try again), or
      * null when it could not be saved.
      */
     suspend fun addXfinderSubscription(): Int? = withContext(Dispatchers.IO) {
         try {
             val existing = MmkvManager.decodeSubscriptions()
-                .firstOrNull { it.subscription.url.trim() == XfinderSources.TOP20_URL }
+                .firstOrNull { it.subscription.url.trim() in listOf(XfinderSources.ALL_URL, XfinderSources.TOP20_URL) }
             val subId = existing?.guid ?: Utils.getUuid()
             val item = existing?.subscription ?: SubscriptionItem()
             item.remarks = XfinderSources.SUBSCRIPTION_NAME
-            item.url = XfinderSources.TOP20_URL
+            item.url = XfinderSources.ALL_URL
             item.enabled = true
             item.autoUpdate = true
             MmkvManager.encodeSubscription(subId, item)

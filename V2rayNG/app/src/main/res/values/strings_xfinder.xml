@@ -21,6 +21,10 @@
     <string name="xf_subtitle">Configs from Xfinder | Matix</string>
     <string name="xf_tab_top">Top 20</string>
     <string name="xf_tab_all">All</string>
+    <string name="xf_tab_vless" translatable="false">VLESS</string>
+    <string name="xf_tab_vmess" translatable="false">VMess</string>
+    <string name="xf_tab_trojan" translatable="false">Trojan</string>
+    <string name="xf_tab_wireguard" translatable="false">WireGuard</string>
     <string name="xf_refresh">Refresh list</string>
     <string name="xf_loading">Loading…</string>
     <string name="xf_error_load">Could not load the list</string>
@@ -175,6 +179,9 @@
     <string name="mx_group_expanded">Open</string>
     <string name="mx_group_collapsed">Closed</string>
     <string name="mx_group_refresh">Update %1$s</string>
+    <string name="mx_group_ping">Test the ping of %1$s</string>
+    <string name="mx_group_ping_stop">Stop testing %1$s</string>
+    <string name="mx_group_menu">More for %1$s</string>
     <string name="mx_import_name_title">Name of the new group</string>
     <string name="mx_import_name_hint">Group name</string>
     <string name="mx_import_name_ok">Add</string>

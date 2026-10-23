@@ -23,9 +23,11 @@ data class XfinderConfig(
     val server: String,
     val port: String,
     val pingMs: Int?,
+    /** Protocol, address, port and user id: two lines with the same key are the same connection. */
+    val connectionKey: String = "",
 )
 
-/** Pure parser for the Xfinder `top20.txt` / `all.txt` bodies. */
+/** Pure parser for the Xfinder list bodies (`all.txt`, `vless.txt`, `vmess.txt`, `trojan.txt`, `wireguard.txt`). */
 object XfinderParser {
     private val pingRegex = Regex("""(\d+)\s*ms""", RegexOption.IGNORE_CASE)
 
@@ -36,6 +38,9 @@ object XfinderParser {
             .filter { it.contains("://") }
             .distinct()
             .mapNotNull(::parseLine)
+            // The same connection listed twice (under two names, say) is shown once: the one with the lower ping.
+            .sortedBy { it.pingMs ?: Int.MAX_VALUE }
+            .distinctBy { it.connectionKey.ifEmpty { it.raw } }
             .toList()
     }
 
@@ -61,6 +66,11 @@ object XfinderParser {
             port = hostPort.second
         }
         val ping = pingRegex.find(name)?.groupValues?.get(1)?.toIntOrNull()
+        val userId = if (scheme == "vmess") {
+            decodeVmess(body.substringBefore('#'))?.get("id").orEmpty()
+        } else {
+            extractUserInfo(body)
+        }
         return XfinderConfig(
             raw = raw,
             protocol = protocolLabel(scheme),
@@ -68,6 +78,7 @@ object XfinderParser {
             server = server,
             port = port,
             pingMs = ping,
+            connectionKey = if (server.isEmpty()) "" else listOf(scheme, server.lowercase(), port, userId).joinToString("|"),
         )
     }
 
@@ -75,6 +86,7 @@ object XfinderParser {
         "vless" -> "VLESS"
         "vmess" -> "VMess"
         "trojan" -> "Trojan"
+        "wireguard" -> "WireGuard"
         "ss" -> "SS"
         else -> scheme.uppercase()
     }
@@ -96,6 +108,15 @@ object XfinderParser {
         // Legacy ss://BASE64(method:pass@host:port); base64 itself may contain '/', so decode before cutting at it.
         val decoded = decodeBase64(beforeQuery.trimEnd('/')) ?: return splitHostPort(authority)
         return splitHostPort(decoded.substringAfterLast('@'))
+    }
+
+    /** What stands before the `@` of the authority (the id, password or key); empty when the link has none. */
+    private fun extractUserInfo(body: String): String {
+        val beforeQuery = body.substringBefore('#').substringBefore('?')
+        val authority = beforeQuery.substringBefore('/')
+        if (authority.contains('@')) return authority.substringBeforeLast('@')
+        val decoded = decodeBase64(beforeQuery.trimEnd('/')) ?: return ""
+        return decoded.substringBeforeLast('@', "")
     }
 
     private fun splitHostPort(hostPort: String): Pair<String, String> {

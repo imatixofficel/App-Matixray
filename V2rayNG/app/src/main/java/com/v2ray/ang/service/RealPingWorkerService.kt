@@ -61,7 +61,8 @@ class RealPingWorkerService(
     private val batch = UUID.randomUUID().toString()
 
     private companion object {
-        const val TCP_PRECHECK_TIMEOUT_MS = 2000
+        // Matixray: 1.5 s (was 2 s) so a dead server costs less of the test; 1 s was too short, see startRealPing.
+        const val TCP_PRECHECK_TIMEOUT_MS = 1500
     }
 
     private val runningCount = AtomicInteger(0)

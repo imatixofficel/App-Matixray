@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -33,6 +34,8 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -55,11 +58,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.LayoutDirection
 import com.v2ray.ang.ui.compose.XfMint
+import com.v2ray.ang.ui.compose.XfBlue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -556,6 +561,10 @@ internal fun GroupedConfigsList(
     onDeleteGroup: (GroupMapItem) -> Unit,
     onSelectGroup: (String) -> Unit,
     onRefreshGroup: (String) -> Unit,
+    /** The group whose configs are being tested right now (its speed button turns into a stop button), or null. */
+    testingGroupId: String?,
+    onPingGroup: (String) -> Unit,
+    onStopTesting: () -> Unit,
     onSelectServer: (String) -> Unit,
     onEditServer: (String, ProfileItem) -> Unit,
     onShareServer: (String, ProfileItem) -> Unit,
@@ -638,6 +647,8 @@ internal fun GroupedConfigsList(
                     open = entry.open,
                     selected = entry.group.id == selectedGroupId,
                     refreshing = fetchBusy && entry.group.id == AppConfig.FREE_SUBSCRIPTION_ID,
+                    pinging = entry.group.id == testingGroupId,
+                    onPing = { if (entry.group.id == testingGroupId) onStopTesting() else onPingGroup(entry.group.id) },
                     onDelete = if (entry.group.id == AppConfig.DEFAULT_SUBSCRIPTION_ID) null else ({ onDeleteGroup(entry.group) }),
                     onToggle = {
                         val id = entry.group.id
@@ -660,7 +671,11 @@ internal fun GroupedConfigsList(
     }
 }
 
-/** The card of one group: a small triangle that opens or closes it, the name with the number of configs, and a refresh button. */
+/**
+ * The card of one group, as V2Box draws it: a small triangle that opens or closes it, the name with the number of
+ * configs, the speed button that tests the ping of this group only (a stop button while it runs), and a three-dot menu
+ * with the update and delete actions of the group.
+ */
 @Composable
 private fun GroupHeaderCard(
     group: GroupMapItem,
@@ -668,8 +683,10 @@ private fun GroupHeaderCard(
     open: Boolean,
     selected: Boolean,
     refreshing: Boolean,
+    pinging: Boolean,
     onDelete: (() -> Unit)?,
     onToggle: () -> Unit,
+    onPing: () -> Unit,
     onRefresh: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -679,7 +696,9 @@ private fun GroupHeaderCard(
     val stateText = stringResource(if (open) R.string.mx_group_expanded else R.string.mx_group_collapsed)
     val refreshLabel = stringResource(R.string.mx_group_refresh, name)
     val deleteLabel = stringResource(R.string.mx_group_delete, name)
-    val triangleColor = scheme.primary
+    val pingLabel = stringResource(if (pinging) R.string.mx_group_ping_stop else R.string.mx_group_ping, name)
+    val menuLabel = stringResource(R.string.mx_group_menu, name)
+    var menuOpen by remember { mutableStateOf(false) }
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(
             modifier = Modifier
@@ -720,24 +739,52 @@ private fun GroupHeaderCard(
                     FreeBadge(onBlue = false)
                 }
             }
-            if (onDelete != null) {
-                IconButton(onClick = onDelete) {
+            // The speed button tests this group only; while that test runs it is a spinner that stops it.
+            IconButton(
+                onClick = onPing,
+                enabled = !refreshing,
+                modifier = Modifier.semantics { contentDescription = pingLabel },
+            ) {
+                if (pinging || refreshing) {
+                    CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.5.dp, color = XfBlue)
+                } else {
                     Icon(
-                        painter = painterResource(R.drawable.ic_delete_24dp),
-                        contentDescription = deleteLabel,
-                        tint = scheme.error,
+                        painter = painterResource(R.drawable.ic_speed_24dp),
+                        contentDescription = null,
+                        tint = XfBlue,
                     )
                 }
             }
-            IconButton(onClick = onRefresh, modifier = Modifier.padding(end = 4.dp)) {
-                if (refreshing) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = scheme.primary)
-                } else {
+            Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd).padding(end = 4.dp)) {
+                IconButton(onClick = { menuOpen = true }) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_refresh_24dp),
-                        contentDescription = refreshLabel,
-                        tint = scheme.primary,
+                        painter = painterResource(R.drawable.ic_more_vert_24dp),
+                        contentDescription = menuLabel,
+                        tint = scheme.onSurfaceVariant,
                     )
+                }
+                DropdownMenu(
+                    expanded = menuOpen,
+                    onDismissRequest = { menuOpen = false },
+                    containerColor = scheme.surface,
+                    shape = RoundedCornerShape(20.dp),
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(refreshLabel) },
+                        onClick = {
+                            menuOpen = false
+                            onRefresh()
+                        },
+                    )
+                    if (onDelete != null) {
+                        DropdownMenuItem(
+                            text = { Text(deleteLabel, color = scheme.error) },
+                            onClick = {
+                                menuOpen = false
+                                onDelete()
+                            },
+                        )
+                    }
                 }
             }
         }

@@ -69,6 +69,9 @@
     <string name="mx_group_expanded">খোলা</string>
     <string name="mx_group_collapsed">বন্ধ</string>
     <string name="mx_group_refresh">%1$s আপডেট করুন</string>
+    <string name="mx_group_ping">%1$s-এর পিং পরীক্ষা করুন</string>
+    <string name="mx_group_ping_stop">%1$s-এর পরীক্ষা বন্ধ করুন</string>
+    <string name="mx_group_menu">%1$s-এর আরও বিকল্প</string>
     <string name="mx_import_name_title">নতুন গ্রুপের নাম</string>
     <string name="mx_import_name_hint">গ্রুপের নাম</string>
     <string name="mx_import_name_ok">যোগ করুন</string>
