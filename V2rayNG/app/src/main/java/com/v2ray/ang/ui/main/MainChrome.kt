@@ -114,10 +114,10 @@ fun MainPageHeader(
     subtitle: String,
     modifier: Modifier = Modifier,
     compact: Boolean = false,
-    leading: (@Composable RowScope.() -> Unit)? = null,
-    actions: (@Composable RowScope.() -> Unit)? = null,
     /** Matixray: when set, the subtitle is shown as a solid blue chip with this icon instead of plain text. */
     @DrawableRes subtitleIcon: Int? = null,
+    leading: (@Composable RowScope.() -> Unit)? = null,
+    actions: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
