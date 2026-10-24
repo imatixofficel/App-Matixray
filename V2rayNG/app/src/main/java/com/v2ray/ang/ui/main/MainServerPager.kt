@@ -483,9 +483,9 @@ private fun ServerListItem(
                 modifier = Modifier
                     .fillMaxHeight()
                     .background(if (isSelected) ConfigSelectedCard else scheme.surfaceContainerHigh)
-                    .padding(horizontal = 6.dp),
+                    .padding(horizontal = 5.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(3.dp),
             ) {
                 if (doubleColumnDisplay) {
                     RailButton(R.drawable.ic_more_vert_24dp, stringResource(R.string.acc_more)) {
@@ -516,15 +516,15 @@ private fun RailButton(
     IconButton(
         onClick = onClick,
         modifier = Modifier
-            .size(28.dp)
+            .size(24.dp)
             .clip(CircleShape)
             .background(Color.White),
     ) {
         Icon(
             painter = painterResource(iconRes),
             contentDescription = description,
-            tint = ConfigInk,
-            modifier = Modifier.size(15.dp),
+            tint = XfBlue,
+            modifier = Modifier.size(13.dp),
         )
     }
 }

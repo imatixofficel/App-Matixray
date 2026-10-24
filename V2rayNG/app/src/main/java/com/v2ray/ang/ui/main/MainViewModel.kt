@@ -187,6 +187,13 @@ class MainViewModel(
         MmkvManager.encodeSettings(AppConfig.PREF_ISP, id)
     }
 
+    /** Matixray: "1" light, "2" dark, "0" follow the system (the same values the old settings screen stores). */
+    val themeMode: StateFlow<String> = com.v2ray.ang.ui.compose.ThemeManager.themeMode
+
+    fun setThemeMode(mode: String) {
+        if (mode in listOf("0", "1", "2")) com.v2ray.ang.ui.compose.ThemeManager.setThemeMode(mode)
+    }
+
     // Matixray: the four quick buttons above the connect bar can be switched off in the settings.
     private val _showQuickActions = MutableStateFlow(MmkvManager.decodeSettingsBool(AppConfig.PREF_SHOW_QUICK_ACTIONS, true))
     val showQuickActions: StateFlow<Boolean> = _showQuickActions.asStateFlow()
@@ -1938,19 +1945,19 @@ class MainViewModel(
 
     companion object {
         /** Matixray: limits of one "get configs" run, so the list and the tests that follow stay small. */
-        private const val MAX_FETCH_TOTAL = 400
-        private const val MAX_FETCH_PER_SOURCE = 25
+        private const val MAX_FETCH_TOTAL = 900
+        private const val MAX_FETCH_PER_SOURCE = 60
         private const val TCP_PRECHECK_PARALLEL = 120
         /**
          * How many configs go on to the real test after the quick check: the ones that answered fastest. It equals the
          * real-ping concurrency, so the whole real test is one wave instead of two.
          */
-        private const val REAL_TEST_MAX = 48
+        private const val REAL_TEST_MAX = 64
         private const val TCP_PRECHECK_TIMEOUT_MS = 1200
         /** Fewer working configs than this after the first round's real test: the fallback lists are read too. */
         private const val MIN_WORKING_BEFORE_FALLBACK = 20
         /** The download stops waiting for slow sources once this many configs are in. */
-        private const val ENOUGH_CANDIDATES = 60
+        private const val ENOUGH_CANDIDATES = 220
         private const val AUTO_FETCH_DELAY_MS = 6_000L
         private const val AUTO_FETCH_MAX_AGE_MS = 3 * 60 * 60 * 1000L
         /** How many tested configs the free group keeps: few, but the fastest ones that work. */

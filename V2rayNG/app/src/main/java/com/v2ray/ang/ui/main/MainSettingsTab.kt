@@ -99,6 +99,8 @@ fun MainSettingsTab(
     onGlassCardsChange: (Boolean) -> Unit,
     isp: String,
     onIspChange: (String) -> Unit,
+    themeMode: String,
+    onThemeModeChange: (String) -> Unit,
     showQuickActions: Boolean,
     onShowQuickActionsChange: (Boolean) -> Unit,
     sources: List<MainViewModel.SourceRow>,
@@ -166,6 +168,8 @@ fun MainSettingsTab(
 
             SectionLabel(stringResource(R.string.mx_settings_look))
             SettingsCard {
+                ThemeRow(themeMode = themeMode, onThemeModeChange = onThemeModeChange)
+                RowDivider()
                 SwitchRow(
                     iconRes = R.drawable.ic_settings_24dp,
                     label = stringResource(R.string.mx_glass_title),
@@ -624,4 +628,43 @@ private fun AddSourceDialog(onAdd: (String, String) -> Boolean, onDismiss: () ->
         },
         containerColor = MaterialTheme.colorScheme.surface,
     )
+}
+
+
+/** Matixray: day, night or follow the system, as three chips; the open one is solid blue. */
+@Composable
+private fun ThemeRow(themeMode: String, onThemeModeChange: (String) -> Unit) {
+    val options = listOf("1" to R.string.mx_theme_light, "2" to R.string.mx_theme_dark, "0" to R.string.mx_theme_auto)
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            RowIcon(R.drawable.ic_settings_24dp)
+            Text(
+                text = stringResource(R.string.mx_theme_title),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        Spacer(Modifier.height(10.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            options.forEach { (id, label) ->
+                val selected = id == themeMode
+                Text(
+                    text = stringResource(label),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(ChipShape(12.dp))
+                        .background(if (selected) XfBlue else MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .semantics { this.selected = selected }
+                        .clickable(role = Role.RadioButton) { onThemeModeChange(id) }
+                        .padding(vertical = 10.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = if (selected) Color.White else MaterialTheme.colorScheme.onSurface,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    maxLines = 1,
+                )
+            }
+        }
+    }
 }

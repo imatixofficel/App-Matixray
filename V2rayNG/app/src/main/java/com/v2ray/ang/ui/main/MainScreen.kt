@@ -136,6 +136,7 @@ fun MainScreen(
     val autoFetch by mainViewModel.autoFetch.collectAsStateWithLifecycle()
     val isp by mainViewModel.isp.collectAsStateWithLifecycle()
     val showQuickActions by mainViewModel.showQuickActions.collectAsStateWithLifecycle()
+    val themeMode by mainViewModel.themeMode.collectAsStateWithLifecycle()
     val sourceRows by mainViewModel.sourceRows.collectAsStateWithLifecycle()
     // Matixray: configs added by hand never go under "Default": they get a new group named by the user; links of
     // subscriptions keep their own way (a group made from the link).
@@ -304,6 +305,8 @@ fun MainScreen(
                         onGlassCardsChange = { mainViewModel.setGlassCards(it) },
                         isp = isp,
                         onIspChange = { mainViewModel.setIsp(it) },
+                        themeMode = themeMode,
+                        onThemeModeChange = { mainViewModel.setThemeMode(it) },
                         showQuickActions = showQuickActions,
                         onShowQuickActionsChange = { mainViewModel.setShowQuickActions(it) },
                         sources = sourceRows,

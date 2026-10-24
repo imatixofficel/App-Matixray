@@ -243,4 +243,8 @@
     <string name="mx_sources_remove">Remove this source</string>
     <string name="mx_sources_all_off">Every source is switched off; turn one on in Settings</string>
     <string name="mx_settings_free">Free configs</string>
+    <string name="mx_theme_title">Theme</string>
+    <string name="mx_theme_light">Light</string>
+    <string name="mx_theme_dark">Dark</string>
+    <string name="mx_theme_auto">Auto</string>
 </resources>

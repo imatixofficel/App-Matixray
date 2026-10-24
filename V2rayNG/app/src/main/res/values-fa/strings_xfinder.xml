@@ -206,4 +206,8 @@
     <string name="mx_sources_remove">حذف این منبع</string>
     <string name="mx_sources_all_off">همه منبع‌ها خاموش‌اند؛ در تنظیمات یکی را روشن کنید</string>
     <string name="mx_settings_free">کانفیگ رایگان</string>
+    <string name="mx_theme_title">تم برنامه</string>
+    <string name="mx_theme_light">روشن</string>
+    <string name="mx_theme_dark">تیره</string>
+    <string name="mx_theme_auto">خودکار</string>
 </resources>
