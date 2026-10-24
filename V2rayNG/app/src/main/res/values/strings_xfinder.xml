@@ -228,4 +228,19 @@
     <string name="mx_no_internet">Connected, but no internet. Try another config.</string>
     <string name="mx_fetch_bar">Downloading configs %1$d%% · %2$d/%3$d sources · +%4$d</string>
     <string name="mx_fetch_checking">Checking servers… %1$d configs found</string>
+    <string name="mx_quick_actions_title">Quick buttons</string>
+    <string name="mx_quick_actions_hint">Show the four buttons above the connect bar: get configs, test all, sort and remove dead.</string>
+    <string name="mx_sources_title">Sources</string>
+    <string name="mx_sources_hint">The lists “Get configs” reads. Switch a list off and the app will not read it. The number is how many of its configs worked in the last run.</string>
+    <string name="mx_sources_working">%d working configs</string>
+    <string name="mx_sources_not_read">Not read yet</string>
+    <string name="mx_sources_off">Off</string>
+    <string name="mx_sources_add">Add my own source</string>
+    <string name="mx_sources_add_ok">Add</string>
+    <string name="mx_sources_name">Name</string>
+    <string name="mx_sources_link">Link of the list (http or https)</string>
+    <string name="mx_sources_invalid">The link is not valid, or the list is already there</string>
+    <string name="mx_sources_remove">Remove this source</string>
+    <string name="mx_sources_all_off">Every source is switched off; turn one on in Settings</string>
+    <string name="mx_settings_free">Free configs</string>
 </resources>

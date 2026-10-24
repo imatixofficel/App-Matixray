@@ -116,6 +116,8 @@ fun MainPageHeader(
     compact: Boolean = false,
     leading: (@Composable RowScope.() -> Unit)? = null,
     actions: (@Composable RowScope.() -> Unit)? = null,
+    /** Matixray: when set, the subtitle is shown as a solid blue chip with this icon instead of plain text. */
+    @DrawableRes subtitleIcon: Int? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
@@ -149,13 +151,35 @@ fun MainPageHeader(
                 }
                 Column(modifier = Modifier.padding(start = 8.dp, top = if (leading != null || actions != null) 0.dp else 10.dp)) {
                     BrandTitle(size = 34.sp, small = false)
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = scheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    if (subtitleIcon != null) {
+                        Row(
+                            modifier = Modifier
+                                .padding(top = 4.dp)
+                                .clip(RoundedCornerShape(50))
+                                .background(XfBlue)
+                                .padding(start = 10.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Icon(painterResource(subtitleIcon), contentDescription = null, tint = Color.White, modifier = Modifier.size(15.dp))
+                            Text(
+                                text = subtitle,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = scheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             }
         }
@@ -197,11 +221,15 @@ fun MainBottomBar(selected: Int, onSelect: (Int) -> Unit, tour: TourState) {
     val colors = NavigationBarItemDefaults.colors(
         selectedIconColor = XfBlue,
         selectedTextColor = XfBlue,
-        indicatorColor = XfBlue.copy(alpha = 0.12f),
+        indicatorColor = Color.Transparent,
         unselectedIconColor = scheme.onSurfaceVariant,
         unselectedTextColor = scheme.onSurfaceVariant,
     )
-    NavigationBar(containerColor = scheme.surface, tonalElevation = 0.dp) {
+    NavigationBar(
+        modifier = Modifier.clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)),
+        containerColor = scheme.surface,
+        tonalElevation = 0.dp,
+    ) {
         BottomItem(MainTab.Home, selected, onSelect, R.drawable.ic_home_24dp, R.string.mx_nav_home, colors,
             Modifier.tourTarget(tour, TourTarget.TabHome))
         BottomItem(MainTab.Configs, selected, onSelect, R.drawable.ic_list_24dp, R.string.mx_nav_configs, colors,
@@ -407,8 +435,8 @@ fun MainQuickActions(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 2.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             QuickActionTile(
                 label = stringResource(if (fetch.busy) R.string.mx_qa_stop else R.string.mx_qa_fetch),
@@ -418,7 +446,7 @@ fun MainQuickActions(
                 filled = true,
                 tint = Color.Unspecified,
                 onClick = onFetch,
-                modifier = Modifier.weight(1.25f),
+                modifier = Modifier.weight(1.45f),
             )
             QuickActionTile(
                 label = stringResource(if (testing) R.string.mx_qa_stop else R.string.mx_qa_test_all),
@@ -515,7 +543,7 @@ private fun QuickActionTile(
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
-    val shape = RoundedCornerShape(22.dp)
+    val shape = RoundedCornerShape(19.dp)
     val source = remember { MutableInteractionSource() }
     val iconColor = if (filled) onMatixButton else tint
     val textColor = if (filled) onMatixButton else scheme.onSurface
@@ -530,26 +558,25 @@ private fun QuickActionTile(
             .background(scheme.surfaceContainerLow)
             .border(1.dp, scheme.outlineVariant, shape)
     }
-    Column(
+    Row(
         modifier = modifier
-            .heightIn(min = 58.dp)
+            .height(38.dp)
             .pressScale(source)
             .then(surface)
             .clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+            .padding(horizontal = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         if (busy) {
             CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(16.dp),
                 strokeWidth = 2.dp,
                 color = iconColor,
             )
         } else {
-            Icon(painterResource(iconRes), contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp))
+            Icon(painterResource(iconRes), contentDescription = null, tint = iconColor, modifier = Modifier.size(16.dp))
         }
-        Spacer(Modifier.height(4.dp))
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
@@ -557,18 +584,9 @@ private fun QuickActionTile(
             color = textColor,
             textAlign = TextAlign.Center,
             maxLines = 1,
+            softWrap = false,
             overflow = TextOverflow.Ellipsis,
         )
-        if (caption != null) {
-            Text(
-                text = caption,
-                style = MaterialTheme.typography.labelSmall,
-                color = textColor.copy(alpha = 0.8f),
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
     }
 }
 
@@ -629,10 +647,21 @@ private fun ConnectPillButton(isRunning: Boolean, pageKey: Any, onToggle: () -> 
     // The round button sits in a larger box, so the rings that move while it is on have room around it.
     Box(modifier = Modifier.size(88.dp), contentAlignment = Alignment.Center) {
         if (on) ConnectOnRings(Modifier.matchParentSize())
+        // The well the button sits in: a darker hollow, shaded from the top edge, so the button looks set into the bar.
+        val dark = com.v2ray.ang.ui.compose.LocalDarkTheme.current
+        val wellTop = if (dark) Color(0xFF050506) else Color(0xFFC9C9D0)
+        val wellBottom = if (dark) Color(0xFF2A2A2E) else Color(0xFFF7F7FA)
         Box(
             modifier = Modifier
-                .size(62.dp)
-                .shadow(if (on) 8.dp else 4.dp, shape, ambientColor = glow, spotColor = glow)
+                .size(76.dp)
+                .clip(shape)
+                .background(Brush.verticalGradient(listOf(wellTop, wellBottom)))
+                .border(1.dp, if (dark) Color.White.copy(alpha = 0.10f) else Color.White, shape),
+        )
+        Box(
+            modifier = Modifier
+                .size(60.dp)
+                .shadow(if (on) 8.dp else 3.dp, shape, ambientColor = glow, spotColor = glow)
                 .clip(shape)
                 .background(MatixButtonBrush)
                 .background(XfConnected.copy(alpha = greenAlpha))

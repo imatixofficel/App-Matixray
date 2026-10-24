@@ -135,6 +135,8 @@ fun MainScreen(
     val glassCards by mainViewModel.glassCards.collectAsStateWithLifecycle()
     val autoFetch by mainViewModel.autoFetch.collectAsStateWithLifecycle()
     val isp by mainViewModel.isp.collectAsStateWithLifecycle()
+    val showQuickActions by mainViewModel.showQuickActions.collectAsStateWithLifecycle()
+    val sourceRows by mainViewModel.sourceRows.collectAsStateWithLifecycle()
     // Matixray: configs added by hand never go under "Default": they get a new group named by the user; links of
     // subscriptions keep their own way (a group made from the link).
     val defaultGroupName = stringResource(R.string.mx_group_mine)
@@ -251,7 +253,7 @@ fun MainScreen(
             bottomBar = {
                 Column {
                     // Matixray: four quick buttons above the connect bar (not on the settings tab).
-                    if (bottomTab != MainTab.Settings) {
+                    if (bottomTab != MainTab.Settings && showQuickActions) {
                         MainQuickActions(
                             fetch = fetchState,
                             testing = uiState.isTesting,
@@ -302,6 +304,12 @@ fun MainScreen(
                         onGlassCardsChange = { mainViewModel.setGlassCards(it) },
                         isp = isp,
                         onIspChange = { mainViewModel.setIsp(it) },
+                        showQuickActions = showQuickActions,
+                        onShowQuickActionsChange = { mainViewModel.setShowQuickActions(it) },
+                        sources = sourceRows,
+                        onSourceEnabledChange = { id, on -> mainViewModel.setSourceEnabled(id, on) },
+                        onAddSource = { name, url -> mainViewModel.addSource(name, url) },
+                        onRemoveSource = { mainViewModel.removeSource(it) },
                         updateAvailable = updateAvailable,
                         onNavigate = onNavigate,
                         tour = tourState,
@@ -310,7 +318,7 @@ fun MainScreen(
                     groups.isEmpty() -> Unit
 
                     bottomTab == MainTab.Home -> {
-                        MainPageHeader(subtitle = stringResource(R.string.mx_nav_home))
+                        MainPageHeader(subtitle = stringResource(R.string.mx_nav_home), subtitleIcon = R.drawable.ic_home_24dp)
                         val section = if (homePager.currentPage == 1) MainSection.Psiphon else MainSection.Main
                         MainSectionTabs(
                             selected = section,

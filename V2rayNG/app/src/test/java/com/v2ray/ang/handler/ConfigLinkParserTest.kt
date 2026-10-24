@@ -65,7 +65,7 @@ class ConfigLinkParserTest {
     }
 
     @Test
-    fun theAppsOwnXfinderListsAndAu1rxxComeFirstAndAreTheOnlyOnesReadAtFirst() {
+    fun theAppsOwnXfinderListsComeFirstAllIsTheMainOneAndTheyAreTheOnlyOnesReadAtFirst() {
         val first = ConfigSources.all.filter { !it.fallback }.map { it.url }
         assertEquals(
             listOf(
@@ -75,7 +75,6 @@ class ConfigLinkParserTest {
                 "https://imatixofficel.github.io/Xfinder/output/vmess.txt",
                 "https://imatixofficel.github.io/Xfinder/output/trojan.txt",
                 "https://imatixofficel.github.io/Xfinder/output/wireguard.txt",
-                "https://raw.githubusercontent.com/Au1rxx/free-vpn-subscriptions/main/output/v2ray-base64.txt",
             ),
             first,
         )
@@ -86,14 +85,10 @@ class ConfigLinkParserTest {
     }
 
     @Test
-    fun theMahsaListsAndThePreviousSourcesAreTheFallback() {
+    fun theMahsaListsAreTheFallback() {
         val base = "https://raw.githubusercontent.com/mahsanet/MahsaFreeConfig/refs/heads/main"
         val expected = listOf("mci", "mtn").flatMap { op -> (1..4).map { "$base/$op/sub_$it.txt" } }
-        val fallback = ConfigSources.all.filter { it.fallback }.map { it.url }
-        // The Mahsa lists come first among the fallback ones, then the sources the button read before.
-        assertEquals(expected, fallback.take(expected.size))
-        assertTrue(fallback.size > expected.size)
-        assertTrue(fallback.any { it.contains("MahsaNetConfigTopic") })
+        assertEquals(expected, ConfigSources.all.filter { it.fallback }.map { it.url })
     }
 
     @Test
@@ -104,6 +99,24 @@ class ConfigLinkParserTest {
             assertTrue(sources.any { it.fallback }, isp)
         }
         assertEquals(ConfigSources.all, ConfigSources.forIsp("unknown"))
+    }
+
+    @Test
+    fun theMultiProxySourceIsInTheFirstRoundAndNoRemovedSourceIsLeft() {
+        val urls = ConfigSources.all.map { it.url }
+        assertTrue(urls.any { it.contains("4n0nymou3/multi-proxy-config-fetcher") && it.endsWith("proxy_configs.txt") })
+        assertTrue(ConfigSources.all.none { it.url.contains("balochscript") })
+        assertTrue(ConfigSources.all.first { it.url.contains("4n0nymou3") }.fallback.not())
+    }
+
+    @Test
+    fun switchedOffSourcesAreLeftOutAndUserSourcesAreAdded() {
+        val off = ConfigSources.all.first()
+        val mine = ConfigSource("mine", "https://example.com/list.txt", custom = true)
+        val sources = ConfigSources.forIsp(IspChoice.AUTO, disabled = setOf(off.id), custom = listOf(mine))
+        assertTrue(sources.none { it.id == off.id })
+        assertTrue(mine in sources)
+        assertTrue(ConfigSources.forIsp(IspChoice.AUTO, disabled = ConfigSources.all.map { it.id }.toSet()).isEmpty())
     }
 
     @Test

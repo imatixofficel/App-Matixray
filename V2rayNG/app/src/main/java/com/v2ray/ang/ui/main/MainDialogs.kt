@@ -166,13 +166,13 @@ fun InAppUpdateDialog(version: String, url: String?, onDismiss: () -> Unit) {
                     modifier = androidx.compose.ui.Modifier
                         .size(56.dp)
                         .clip(androidx.compose.foundation.shape.CircleShape)
-                        .background(com.v2ray.ang.ui.compose.XfBlue.copy(alpha = 0.12f)),
+                        .background(com.v2ray.ang.ui.compose.XfBlue),
                     contentAlignment = androidx.compose.ui.Alignment.Center,
                 ) {
                     androidx.compose.material3.Icon(
                         painter = androidx.compose.ui.res.painterResource(R.drawable.ic_check_update_24dp),
                         contentDescription = null,
-                        tint = com.v2ray.ang.ui.compose.XfBlue,
+                        tint = androidx.compose.ui.graphics.Color.White,
                         modifier = androidx.compose.ui.Modifier.size(30.dp),
                     )
                 }

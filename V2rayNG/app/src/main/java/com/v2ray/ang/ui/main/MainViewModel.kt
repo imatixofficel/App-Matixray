@@ -27,6 +27,7 @@ import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.handler.IspChoice
 import com.v2ray.ang.handler.ConfigSource
 import com.v2ray.ang.handler.ConfigSources
+import com.v2ray.ang.handler.ConfigSourceStore
 import com.v2ray.ang.extension.matchesPattern
 import com.v2ray.ang.extension.moveItem
 import com.v2ray.ang.ui.base.BaseViewModel
@@ -185,6 +186,51 @@ class MainViewModel(
         _isp.value = id
         MmkvManager.encodeSettings(AppConfig.PREF_ISP, id)
     }
+
+    // Matixray: the four quick buttons above the connect bar can be switched off in the settings.
+    private val _showQuickActions = MutableStateFlow(MmkvManager.decodeSettingsBool(AppConfig.PREF_SHOW_QUICK_ACTIONS, true))
+    val showQuickActions: StateFlow<Boolean> = _showQuickActions.asStateFlow()
+
+    fun setShowQuickActions(enabled: Boolean) {
+        _showQuickActions.value = enabled
+        MmkvManager.encodeSettings(AppConfig.PREF_SHOW_QUICK_ACTIONS, enabled)
+    }
+
+    /** Matixray: one line of the "sources" card in the settings. [working] is null until a run has read the list. */
+    data class SourceRow(val id: String, val name: String, val enabled: Boolean, val custom: Boolean, val working: Int?)
+
+    private fun readSourceRows(): List<SourceRow> {
+        val disabled = ConfigSourceStore.disabled()
+        return (ConfigSources.all + ConfigSourceStore.custom()).map {
+            SourceRow(it.id, it.name, it.id !in disabled, it.custom, ConfigSourceStore.workingCount(it.id))
+        }
+    }
+
+    private val _sourceRows = MutableStateFlow(readSourceRows())
+    val sourceRows: StateFlow<List<SourceRow>> = _sourceRows.asStateFlow()
+
+    fun setSourceEnabled(id: String, enabled: Boolean) {
+        ConfigSourceStore.setEnabled(id, enabled)
+        _sourceRows.value = readSourceRows()
+    }
+
+    /** Adds a list of the user; false when the link is not valid or the list is already there. */
+    fun addSource(name: String, url: String): Boolean {
+        val added = ConfigSourceStore.addCustom(name, url)
+        if (added) _sourceRows.value = readSourceRows()
+        return added
+    }
+
+    fun removeSource(id: String) {
+        ConfigSourceStore.removeCustom(id)
+        _sourceRows.value = readSourceRows()
+    }
+
+    /** guid of a fetched config -> the list it came from, for the working counts of the settings. */
+    private val fetchedFrom = ConcurrentHashMap<String, String>()
+    private val answeredSources = ConcurrentHashMap.newKeySet<String>()
+    /** Configs of the running "get configs" test that answered; the test stops early once enough did. */
+    private val fetchWorking = ConcurrentHashMap.newKeySet<String>()
 
     /** True from the end of a "get configs" download until the tests it started finish; then the list is sorted. */
     private var sortAfterTests = false
@@ -537,6 +583,10 @@ class MainViewModel(
 
     private fun queueTestResult(result: RealPingResult, request: MainTestRequests.Bulk) {
         pendingTestResults[result.guid] = result.delayMillis
+        if (sortAfterTests && purgeDeadAfterTests && result.delayMillis > 0L) {
+            fetchWorking += result.guid
+            if (fetchWorking.size >= FREE_KEEP_BEST) finishFetchEarly()
+        }
         if (testResultFlushJob?.isActive == true) return
 
         testResultFlushJob = viewModelScope.launch {
@@ -1131,8 +1181,17 @@ class MainViewModel(
      * already holds, or one that came twice, is dropped by its connection key (protocol, address, port and user id).
      */
     private fun fetchConfigs(silent: Boolean = false) {
-        val (fallback, first) = ConfigSources.forIsp(MmkvManager.decodeSettingsString(AppConfig.PREF_ISP) ?: IspChoice.AUTO)
-            .partition { it.fallback }
+        val (fallback, first) = ConfigSources.forIsp(
+            MmkvManager.decodeSettingsString(AppConfig.PREF_ISP) ?: IspChoice.AUTO,
+            disabled = ConfigSourceStore.disabled(),
+            custom = ConfigSourceStore.custom(),
+        ).partition { it.fallback }
+        if (first.isEmpty() && fallback.isEmpty()) {
+            if (!silent) toast(dataSource.getString(R.string.mx_sources_all_off))
+            return
+        }
+        fetchedFrom.clear()
+        answeredSources.clear()
         val sources = first.ifEmpty { fallback }
         val backup = if (first.isEmpty()) emptyList() else fallback
         _fetchState.value = ConfigFetchState(FetchPhase.Downloading, sourcesTotal = sources.size)
@@ -1171,6 +1230,7 @@ class MainViewModel(
                 }
                 // testAllRealPing starts with cancelAllPing, which clears the flag and the testing phase, so both
                 // are set after the call.
+                fetchWorking.clear()
                 testAllRealPing()
                 _fetchState.value = ConfigFetchState(FetchPhase.Testing, tally.done, sources.size, tally.added)
                 sortAfterTests = true
@@ -1198,6 +1258,7 @@ class MainViewModel(
         ConfigFetcher.fetchAll(sources, enough = { tally.added >= ENOUGH_CANDIDATES }) { result ->
             importLock.withLock {
                 tally.done++
+                answeredSources += result.source.id
                 if (result.links.isNotEmpty()) tally.reachable++
                 if (!freeCleared && result.links.isNotEmpty()) {
                     freeCleared = true
@@ -1206,7 +1267,7 @@ class MainViewModel(
                 }
                 currentCoroutineContext().ensureActive()
                 val take = minOf(MAX_FETCH_PER_SOURCE, MAX_FETCH_TOTAL - tally.added)
-                if (take > 0) tally.added += importFetchedBatch(result.links.take(take), seen, freeId)
+                if (take > 0) tally.added += importFetchedBatch(result.links.take(take), seen, freeId, result.source.id)
                 _fetchState.value = ConfigFetchState(FetchPhase.Downloading, tally.done, sources.size, tally.added)
             }
         }
@@ -1254,6 +1315,7 @@ class MainViewModel(
         showFetchedGroup()
         setupGroupTab(forceRefresh = true).join()
         if (currentServers().isEmpty()) return false
+        fetchWorking.clear()
         testAllRealPing()
         _fetchState.value = ConfigFetchState(FetchPhase.Testing, tally.done, sources.size, tally.added)
         sortAfterTests = true
@@ -1291,7 +1353,7 @@ class MainViewModel(
      * Adds all the share links of one source to the free group [groupId] in one import, then removes the profiles that
      * the app already holds (the same connection key as one in [seen]). Returns how many new profiles stayed.
      */
-    private suspend fun importFetchedBatch(links: List<String>, seen: MutableSet<String>, groupId: String): Int {
+    private suspend fun importFetchedBatch(links: List<String>, seen: MutableSet<String>, groupId: String, sourceId: String? = null): Int {
         if (links.isEmpty()) return 0
         val before = dataSource.getServerGuidList(groupId).toHashSet()
         try {
@@ -1308,6 +1370,7 @@ class MainViewModel(
                 dataSource.removeServer(guid)
             } else {
                 kept++
+                if (sourceId != null) fetchedFrom[guid] = sourceId
             }
         }
         return kept
@@ -1730,6 +1793,19 @@ class MainViewModel(
         dataSource.testCurrentServerRealPing(requestId)
     }
 
+    /**
+     * Matixray: "get configs" has [FREE_KEEP_BEST] configs that answered, which is all the free group keeps: the rest of
+     * the test is given up and the run ends now, so the list is ready in seconds instead of waiting for the slow ones.
+     */
+    private fun finishFetchEarly() {
+        if (!sortAfterTests) return
+        val purge = purgeDeadAfterTests
+        fetchWorking.clear()
+        // cancelAllPing also clears the run's flags, so the early end is the only one that goes on.
+        cancelAllPing()
+        fetchJob = viewModelScope.launch(ioDispatcher) { finishFetchedRun(purge) }
+    }
+
     private fun onTestsFinished(requestId: String) {
         if (testRequests.completeBulk(requestId) == null) return
         resetTestStatus()
@@ -1763,6 +1839,7 @@ class MainViewModel(
      */
     private suspend fun finishFetchedRun(purge: Boolean) {
         try {
+            saveSourceCounts()
             if (purge) {
                 val freeId = AppConfig.FREE_SUBSCRIPTION_ID
                 val before = dataSource.getServerGuidList(freeId)
@@ -1790,6 +1867,16 @@ class MainViewModel(
             withContext(Dispatchers.Main) { restoreGroupIfNeeded() }
         }
         sortByTestResultsAsync()
+    }
+
+    /** Stores, for every list this run read, how many of its configs answered the test (shown in the settings). */
+    private fun saveSourceCounts() {
+        val working = dataSource.getServerGuidList(AppConfig.FREE_SUBSCRIPTION_ID)
+            .filter { (dataSource.decodeAffiliationInfo(it)?.testDelayMillis ?: 0L) > 0L }
+            .groupingBy { fetchedFrom[it] }
+            .eachCount()
+        answeredSources.forEach { id -> ConfigSourceStore.setWorkingCount(id, working[id] ?: 0) }
+        _sourceRows.value = readSourceRows()
     }
 
     fun triggerLocateSelectedServer() {
@@ -1863,7 +1950,7 @@ class MainViewModel(
         /** Fewer working configs than this after the first round's real test: the fallback lists are read too. */
         private const val MIN_WORKING_BEFORE_FALLBACK = 20
         /** The download stops waiting for slow sources once this many configs are in. */
-        private const val ENOUGH_CANDIDATES = 90
+        private const val ENOUGH_CANDIDATES = 60
         private const val AUTO_FETCH_DELAY_MS = 6_000L
         private const val AUTO_FETCH_MAX_AGE_MS = 3 * 60 * 60 * 1000L
         /** How many tested configs the free group keeps: few, but the fastest ones that work. */

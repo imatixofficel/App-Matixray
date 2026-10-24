@@ -26,10 +26,15 @@ data class ConfigSource(
     val url: String,
     val isps: Set<String> = emptySet(),
     val fallback: Boolean = false,
-)
+    /** True for a list the user added in the settings; only those can be removed there. */
+    val custom: Boolean = false,
+) {
+    /** The link is the stable identity of a list: the settings store its on/off state and its count under it. */
+    val id: String get() = url
+}
 
 /**
- * Matixray: the lists the "get configs" button reads. The app's own Xfinder lists and the Au1rxx list come first and are the only ones
+ * Matixray: the lists the "get configs" button reads. The app's own Xfinder lists come first and are the only ones
  * read at first (all.txt is the main one; top20.txt is small, so it arrives first); the Mahsa free-config lists are [ConfigSource.fallback]: they are read only when the Xfinder ones
  * left too few working configs after the test. A list that is down, moved or empty is skipped, so a dead entry costs
  * only its timeout; add an entry here (with [ConfigSource.isps] for a list made for one provider) and nothing else
@@ -38,7 +43,6 @@ data class ConfigSource(
 object ConfigSources {
     private const val XFINDER = "https://imatixofficel.github.io/Xfinder/output"
     private const val MAHSA = "https://raw.githubusercontent.com/mahsanet/MahsaFreeConfig/refs/heads/main"
-    private const val AU1RXX = "https://raw.githubusercontent.com/Au1rxx/free-vpn-subscriptions/main"
 
     val all: List<ConfigSource> = listOf(
         ConfigSource("Matix | Xfinder All", "$XFINDER/all.txt"),
@@ -47,8 +51,7 @@ object ConfigSources {
         ConfigSource("Matix | Xfinder VMess", "$XFINDER/vmess.txt"),
         ConfigSource("Matix | Xfinder Trojan", "$XFINDER/trojan.txt"),
         ConfigSource("Matix | Xfinder WireGuard", "$XFINDER/wireguard.txt"),
-        // Beside the app's own lists: a large public collector that gives a fresh base64 list of configs.
-        ConfigSource("Au1rxx | free-vpn-subscriptions", "$AU1RXX/output/v2ray-base64.txt"),
+        ConfigSource("4n0nymou3 | Multi Proxy", "https://raw.githubusercontent.com/4n0nymou3/multi-proxy-config-fetcher/refs/heads/main/configs/proxy_configs.txt"),
         ConfigSource("Mahsa | MCI 1", "$MAHSA/mci/sub_1.txt", fallback = true),
         ConfigSource("Mahsa | MCI 2", "$MAHSA/mci/sub_2.txt", fallback = true),
         ConfigSource("Mahsa | MCI 3", "$MAHSA/mci/sub_3.txt", fallback = true),
@@ -57,56 +60,77 @@ object ConfigSources {
         ConfigSource("Mahsa | MTN 2", "$MAHSA/mtn/sub_2.txt", fallback = true),
         ConfigSource("Mahsa | MTN 3", "$MAHSA/mtn/sub_3.txt", fallback = true),
         ConfigSource("Mahsa | MTN 4", "$MAHSA/mtn/sub_4.txt", fallback = true),
-        // The lists the button read before the Xfinder-first rewrite, kept as fallback: read when the first round leaves too few working configs.
-        // Mahsa NG: its own public lists (the Topic repositories its community keeps for Iran).
-        ConfigSource("Mahsa NG", "https://raw.githubusercontent.com/MahsaNetConfigTopic/config/main/xray_final.txt", fallback = true),
-        ConfigSource("Mahsa NG | mirror", "https://raw.githubusercontent.com/mhcfpTopic/config/main/xray_final.txt", fallback = true),
-        ConfigSource("Mahsa NG | vless", "https://raw.githubusercontent.com/MahsaNetConfigTopic/config/main/xray_final_vless.txt", fallback = true),
-        ConfigSource("Mahsa NG | mix", "https://raw.githubusercontent.com/MahsaNetConfigTopic/config/main/mix.txt", fallback = true),
-        // Lists that already keep only configs that were checked from inside Iran.
-        ConfigSource("OpenRay Iran top100", "https://raw.githubusercontent.com/sakha1370/OpenRay/refs/heads/main/output_iran/iran_top100_checked.txt", fallback = true),
-        ConfigSource("Iran-configs", "https://raw.githubusercontent.com/therealaleph/Iran-configs/refs/heads/main/ir_configs.txt", fallback = true),
-        ConfigSource("Sub_Checker_Creator", "https://raw.githubusercontent.com/hamedp-71/Sub_Checker_Creator/refs/heads/main/final.txt", fallback = true),
-        ConfigSource("F0rc3Run best", "https://raw.githubusercontent.com/F0rc3Run/F0rc3Run/refs/heads/main/Best-Results/sub.txt", fallback = true),
-        ConfigSource("patterniha", "https://raw.githubusercontent.com/patterniha/Free-Configs/main/configs.txt", fallback = true),
-        ConfigSource("port-based top100", "https://raw.githubusercontent.com/hamedcode/port-based-v2ray-configs/main/sub/top100.txt", fallback = true),
-        ConfigSource("0xRadikal top100", "https://raw.githubusercontent.com/0xRadikal/Free-v2ray-Configs/main/top100.txt", fallback = true),
-        // Well-known open collectors, refreshed every few minutes by their owners (also from outside Iran).
-        ConfigSource("Epodonios", "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_Sub.txt", fallback = true),
-        ConfigSource("Epodonios Sub1", "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub1.txt", fallback = true),
-        ConfigSource("Epodonios Sub2", "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub2.txt", fallback = true),
-        ConfigSource("barry-far", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/All_Configs_Sub.txt", fallback = true),
-        ConfigSource("barry-far vless", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Splitted-By-Protocol/vless.txt", fallback = true),
-        ConfigSource("barry-far Sub1", "https://raw.githubusercontent.com/barry-far/V2ray-config/main/Sub1.txt", fallback = true),
-        ConfigSource("ebrasha", "https://raw.githubusercontent.com/ebrasha/free-v2ray-public-list/refs/heads/main/V2Ray-Config-By-EbraSha.txt", fallback = true),
-        ConfigSource("ebrasha vless", "https://raw.githubusercontent.com/ebrasha/free-v2ray-public-list/refs/heads/main/vless_configs.txt", fallback = true),
-        ConfigSource("MatinGhanbari", "https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/v2ray/super-sub.txt", fallback = true),
-        ConfigSource("TVC (yebekhe)", "https://raw.githubusercontent.com/yebekhe/TVC/main/subscriptions/xray/base64/mix", fallback = true),
-        ConfigSource("V2RayAggregator", "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt", fallback = true),
-        ConfigSource("SSAggregator", "https://raw.githubusercontent.com/mahdibland/SSAggregator/master/sub/sub_merge.txt", fallback = true),
-        ConfigSource("Telegram collector", "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/splitted/mixed", fallback = true),
-        ConfigSource("Telegram collector (mohamadfg)", "https://raw.githubusercontent.com/mohamadfg-dev/telegram-v2ray-configs-collector/refs/heads/main/category/vless.txt", fallback = true),
-        ConfigSource("Pawdroid", "https://raw.githubusercontent.com/Pawdroid/Free-servers/main/sub", fallback = true),
-        ConfigSource("ermaozi", "https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/v2ray.txt", fallback = true),
-        ConfigSource("4Diana", "https://raw.githubusercontent.com/EEvanescence/4Diana/main/AllConfigsSub.txt", fallback = true),
-        ConfigSource("NiREvil", "https://raw.githubusercontent.com/NiREvil/vless/refs/heads/main/sub/SSTime", fallback = true),
-        ConfigSource("Argh94", "https://raw.githubusercontent.com/Argh94/V2RayAutoConfig/refs/heads/main/configs/Hysteria2.txt", fallback = true),
-        ConfigSource("V2RayRoot", "https://raw.githubusercontent.com/V2RayRoot/V2RayConfig/refs/heads/main/Config/vless.txt", fallback = true),
-        ConfigSource("multi-proxy fetcher", "https://raw.githubusercontent.com/4n0nymou3/multi-proxy-config-fetcher/refs/heads/main/configs/proxy_configs.txt", fallback = true),
-        ConfigSource("free-v2ray-collector", "https://raw.githubusercontent.com/iboxz/free-v2ray-collector/main/main/mix.txt", fallback = true),
-        ConfigSource("NewCollector", "https://raw.githubusercontent.com/rango-cfs/NewCollector/refs/heads/main/v2ray_links.txt", fallback = true),
-        ConfigSource("kamaji", "https://raw.githubusercontent.com/shabane/kamaji/master/hub/merged.txt", fallback = true),
-        ConfigSource("awesome-vpn", "https://raw.githubusercontent.com/awesome-vpn/awesome-vpn/master/all", fallback = true),
-        ConfigSource("xray-config-toolkit", "https://raw.githubusercontent.com/wuqb2i4f/xray-config-toolkit/refs/heads/main/output/base64/mix-uri", fallback = true),
-        ConfigSource("freeSub", "https://raw.githubusercontent.com/Ruk1ng001/freeSub/main/v2ray", fallback = true),
-        ConfigSource("freenode", "https://raw.githubusercontent.com/ripaojiedian/freenode/main/sub", fallback = true),
     )
 
-    /** The lists that fit the provider the user chose ([IspChoice.AUTO] or an unknown id means all of them). */
-    fun forIsp(isp: String): List<ConfigSource> {
-        val fitting = all.filter { it.isps.isEmpty() || isp in it.isps }
-        return fitting.ifEmpty { all }
+    /**
+     * The lists that fit the provider the user chose ([IspChoice.AUTO] or an unknown id means all of them), plus the
+     * lists the user added ([custom]), minus the ones the user switched off ([disabled], by [ConfigSource.id]).
+     */
+    fun forIsp(
+        isp: String,
+        disabled: Set<String> = emptySet(),
+        custom: List<ConfigSource> = emptyList(),
+    ): List<ConfigSource> {
+        val fitting = all.filter { it.isps.isEmpty() || isp in it.isps }.ifEmpty { all }
+        return (fitting + custom).filter { it.id !in disabled }
     }
+}
+
+/**
+ * Matixray: what the settings remember about the sources: the ones switched off, the ones the user added, and how many
+ * configs of each worked in the last run. Stored in the app settings; the screens reach it through the ViewModel.
+ */
+object ConfigSourceStore {
+    private const val SEP = '\u0001'
+
+    fun disabled(): Set<String> = MmkvManager.decodeSettingsStringSet(AppConfig.PREF_SRC_DISABLED)?.toSet() ?: emptySet()
+
+    fun setEnabled(id: String, enabled: Boolean) {
+        val set = disabled().toMutableSet()
+        if (enabled) set.remove(id) else set.add(id)
+        MmkvManager.encodeSettings(AppConfig.PREF_SRC_DISABLED, set)
+    }
+
+    fun custom(): List<ConfigSource> =
+        (MmkvManager.decodeSettingsStringSet(AppConfig.PREF_SRC_CUSTOM) ?: emptySet<String>())
+            .mapNotNull { entry ->
+                val name = entry.substringBefore(SEP, "")
+                val url = entry.substringAfter(SEP, "")
+                if (name.isBlank() || url.isBlank()) null else ConfigSource(name, url, custom = true)
+            }
+            .sortedBy { it.name.lowercase() }
+
+    /** Adds a list; false when [url] is not an http(s) link or the list is already there. */
+    fun addCustom(name: String, url: String): Boolean {
+        val cleanUrl = url.trim()
+        if (!isValidUrl(cleanUrl)) return false
+        if (ConfigSources.all.any { it.url == cleanUrl } || custom().any { it.url == cleanUrl }) return false
+        val cleanName = name.trim().ifBlank { cleanUrl.substringAfter("://").substringBefore('/') }
+        val set = (MmkvManager.decodeSettingsStringSet(AppConfig.PREF_SRC_CUSTOM) ?: emptySet<String>()).toMutableSet()
+        set.add("$cleanName$SEP$cleanUrl")
+        MmkvManager.encodeSettings(AppConfig.PREF_SRC_CUSTOM, set)
+        return true
+    }
+
+    fun removeCustom(id: String) {
+        val set = (MmkvManager.decodeSettingsStringSet(AppConfig.PREF_SRC_CUSTOM) ?: emptySet<String>()).toMutableSet()
+        set.removeAll { it.substringAfter(SEP, "") == id }
+        MmkvManager.encodeSettings(AppConfig.PREF_SRC_CUSTOM, set)
+        setEnabled(id, true)
+        MmkvManager.encodeSettings(AppConfig.PREF_SRC_OK_PREFIX + id, -1)
+    }
+
+    /** How many configs of the list worked in the last run; null when no run has read it yet. */
+    fun workingCount(id: String): Int? =
+        MmkvManager.decodeSettingsInt(AppConfig.PREF_SRC_OK_PREFIX + id, -1).takeIf { it >= 0 }
+
+    fun setWorkingCount(id: String, count: Int) {
+        MmkvManager.encodeSettings(AppConfig.PREF_SRC_OK_PREFIX + id, count)
+    }
+
+    fun isValidUrl(url: String): Boolean =
+        (url.startsWith("https://", ignoreCase = true) || url.startsWith("http://", ignoreCase = true)) &&
+            url.length > 10 && url.none { it.isWhitespace() }
 }
 
 /** The internet providers the user can say they use; stored by id in the settings. */
@@ -254,8 +278,7 @@ object ConfigFetcher {
                 val links = ConfigLinkParser.extractLinks(String(bytes, Charsets.UTF_8), truncated)
                 // The app's own lists name each config's latency: the fastest are offered first. A fallback list
                 // does not, so its links are offered in random order.
-                (if (source.fallback || links.none { ConfigLinkParser.pingHint(it) != null }) links.shuffled()
-                else ConfigLinkParser.fastestFirst(links))
+                (if (source.fallback) links.shuffled() else ConfigLinkParser.fastestFirst(links))
                     .take(CANDIDATES_PER_SOURCE)
             }
         } catch (e: Exception) {

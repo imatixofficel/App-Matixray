@@ -37,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -263,7 +264,7 @@ fun MainConfigsToolbar(
                     .tourTarget(tour, TourTarget.PingAll)
                     .height(34.dp)
                     .clip(chip)
-                    .background(XfBlue.copy(alpha = 0.12f))
+                    .background(XfBlue)
                     .clickable(role = Role.Button, onClick = onPingAll)
                     .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -272,14 +273,14 @@ fun MainConfigsToolbar(
                 Icon(
                     painter = painterResource(R.drawable.ic_speed_24dp),
                     contentDescription = null,
-                    tint = XfBlue,
+                    tint = Color.White,
                     modifier = Modifier.size(18.dp),
                 )
                 Text(
                     text = stringResource(R.string.mx_ping_all),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
-                    color = scheme.onSurface,
+                    color = Color.White,
                 )
             }
         }

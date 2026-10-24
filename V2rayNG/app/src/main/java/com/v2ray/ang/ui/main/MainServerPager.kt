@@ -361,9 +361,9 @@ private val pingGoodBg = Color(0xFF93E39A)
 private val pingMidText = Color(0xFF6B4A00)
 private val pingMidBg = Color(0xFFF3C877)
 private val pingFailBg = Color(0xFFE57373)
-private val ConfigSelectedCard = Color(0xFFA5D0E8)
-private val ConfigSelectedStrip = Color(0xFF0A84C6)
-private val ConfigInk = Color(0xFF111111)
+private val ConfigSelectedCard = Color(0xFF0B63F6)
+private val ConfigSelectedStrip = Color(0xFF0847B8)
+private val ConfigInk = Color(0xFFFFFFFF)
 
 /** The ping mark of a config card, as in V2Box: a small green badge with the delay, a soft red "Timeout" when the test failed. */
 @Composable
@@ -432,7 +432,7 @@ private fun ServerListItem(
                 modifier = Modifier
                     .width(30.dp)
                     .fillMaxHeight()
-                    .background(if (isSelected) ConfigSelectedStrip else scheme.surfaceContainerHighest),
+                    .background(if (isSelected) ConfigSelectedStrip else XfBlue),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -440,7 +440,7 @@ private fun ServerListItem(
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.3.sp,
-                    color = if (isSelected) Color.White else scheme.onSurface,
+                    color = Color.White,
                     maxLines = 1,
                     softWrap = false,
                     modifier = Modifier.verticalText(),
@@ -811,17 +811,16 @@ internal suspend fun PagerState.navigateToPageOptimized(
 /** Matixray: the small green "free" tag shown next to the free group and the configs inside it. */
 @Composable
 private fun FreeBadge(onBlue: Boolean) {
-    val green = Color(0xFF2EBD6B)
     val shape = RoundedCornerShape(50)
     Text(
         text = stringResource(R.string.mx_free_badge),
         modifier = Modifier
             .clip(shape)
-            .background(if (onBlue) Color.White.copy(alpha = 0.9f) else green.copy(alpha = 0.16f))
+            .background(if (onBlue) Color.White else XfBlue)
             .padding(horizontal = 8.dp, vertical = 2.dp),
         style = MaterialTheme.typography.labelSmall,
         fontWeight = FontWeight.Bold,
-        color = if (onBlue) Color(0xFF1B7F47) else green,
+        color = if (onBlue) XfBlue else Color.White,
         maxLines = 1,
         softWrap = false,
     )

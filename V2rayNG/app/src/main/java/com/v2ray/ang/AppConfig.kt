@@ -103,6 +103,10 @@ object AppConfig {
     /** Matixray: "get configs" tests every config first and keeps only the working ones (default on). */
     const val PREF_FETCH_ONLY_WORKING = "pref_fetch_only_working"
     const val PREF_ISP = "pref_isp"
+    const val PREF_SHOW_QUICK_ACTIONS = "pref_show_quick_actions"
+    const val PREF_SRC_DISABLED = "pref_src_disabled"
+    const val PREF_SRC_CUSTOM = "pref_src_custom"
+    const val PREF_SRC_OK_PREFIX = "pref_src_ok_"
     const val PREF_AUTO_FETCH = "pref_auto_fetch_free"
     const val PREF_FREE_LAST_FETCH = "pref_free_last_fetch"
     const val PREF_GLASS_CARDS = "pref_glass_cards"

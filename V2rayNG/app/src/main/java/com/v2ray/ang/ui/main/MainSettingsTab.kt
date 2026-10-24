@@ -28,6 +28,10 @@ import androidx.compose.ui.graphics.Color
 import com.v2ray.ang.ui.compose.XfBlue
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -64,6 +68,7 @@ private val generalItems = listOf(
     MainDestination.Settings,
     MainDestination.Language,
     MainDestination.Subscriptions,
+    MainDestination.PerAppProxy,
     MainDestination.Routing,
     MainDestination.UserAssets,
 )
@@ -94,6 +99,12 @@ fun MainSettingsTab(
     onGlassCardsChange: (Boolean) -> Unit,
     isp: String,
     onIspChange: (String) -> Unit,
+    showQuickActions: Boolean,
+    onShowQuickActionsChange: (Boolean) -> Unit,
+    sources: List<MainViewModel.SourceRow>,
+    onSourceEnabledChange: (String, Boolean) -> Unit,
+    onAddSource: (String, String) -> Boolean,
+    onRemoveSource: (String) -> Unit,
     updateAvailable: Boolean,
     onNavigate: (MainDestination) -> Unit,
     tour: TourState,
@@ -101,7 +112,7 @@ fun MainSettingsTab(
 ) {
     val context = LocalContext.current
     Column(modifier = modifier.fillMaxSize()) {
-        MainPageHeader(subtitle = stringResource(R.string.mx_nav_settings))
+        MainPageHeader(subtitle = stringResource(R.string.mx_nav_settings), subtitleIcon = R.drawable.ic_settings_24dp)
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -132,6 +143,27 @@ fun MainSettingsTab(
                 }
             }
 
+            SectionLabel(stringResource(R.string.mx_settings_free))
+            SettingsCard {
+                IspRow(isp = isp, onIspChange = onIspChange)
+                RowDivider()
+                SwitchRow(
+                    iconRes = R.drawable.ic_check_update_24dp,
+                    label = stringResource(R.string.mx_fetch_only_working_title),
+                    hint = stringResource(R.string.mx_fetch_only_working_hint),
+                    checked = fetchOnlyWorking,
+                    onCheckedChange = onFetchOnlyWorkingChange,
+                )
+                RowDivider()
+                SwitchRow(
+                    iconRes = R.drawable.ic_cloud_download_24dp,
+                    label = stringResource(R.string.mx_auto_fetch_title),
+                    hint = stringResource(R.string.mx_auto_fetch_hint),
+                    checked = autoFetch,
+                    onCheckedChange = onAutoFetchChange,
+                )
+            }
+
             SectionLabel(stringResource(R.string.mx_settings_look))
             SettingsCard {
                 SwitchRow(
@@ -141,7 +173,23 @@ fun MainSettingsTab(
                     checked = glassCards,
                     onCheckedChange = onGlassCardsChange,
                 )
+                RowDivider()
+                SwitchRow(
+                    iconRes = R.drawable.ic_speed_24dp,
+                    label = stringResource(R.string.mx_quick_actions_title),
+                    hint = stringResource(R.string.mx_quick_actions_hint),
+                    checked = showQuickActions,
+                    onCheckedChange = onShowQuickActionsChange,
+                )
             }
+
+            SectionLabel(stringResource(R.string.mx_sources_title))
+            SourcesCard(
+                sources = sources,
+                onEnabledChange = onSourceEnabledChange,
+                onAdd = onAddSource,
+                onRemove = onRemoveSource,
+            )
 
             SectionLabel(stringResource(R.string.mx_settings_status))
             SettingsCard {
@@ -225,20 +273,12 @@ private fun RowDivider() {
 /** The small rounded tile behind the icon of a row: a neutral fill, a hairline frame, the icon centered in it. */
 @Composable
 private fun RowIcon(@DrawableRes iconRes: Int) {
-    val scheme = MaterialTheme.colorScheme
-    val shape = androidx.compose.foundation.shape.CircleShape
-    Box(
-        modifier = Modifier
-            .size(34.dp)
-            .clip(shape)
-            .background(XfBlue.copy(alpha = 0.12f)),
-        contentAlignment = Alignment.Center,
-    ) {
+    Box(modifier = Modifier.size(34.dp), contentAlignment = Alignment.Center) {
         Icon(
             painter = painterResource(iconRes),
             contentDescription = null,
             tint = XfBlue,
-            modifier = Modifier.size(19.dp),
+            modifier = Modifier.size(24.dp),
         )
     }
 }
@@ -431,4 +471,157 @@ private fun ispLabel(id: String): Int = when (id) {
     IspChoice.TCI -> R.string.mx_isp_tci
     IspChoice.RIGHTEL -> R.string.mx_isp_rightel
     else -> R.string.mx_isp_auto
+}
+
+
+/**
+ * Matixray: the "sources" card: every list "get configs" reads, with how many of its configs worked in the last run, a
+ * switch to leave it out, a remove button for the lists the user added, and a row to add a link of their own.
+ */
+@Composable
+private fun SourcesCard(
+    sources: List<MainViewModel.SourceRow>,
+    onEnabledChange: (String, Boolean) -> Unit,
+    onAdd: (String, String) -> Boolean,
+    onRemove: (String) -> Unit,
+) {
+    var adding by rememberSaveable { mutableStateOf(false) }
+    SettingsCard {
+        Text(
+            text = stringResource(R.string.mx_sources_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 4.dp),
+        )
+        sources.forEach { row ->
+            RowDivider()
+            SourceRowItem(row, onEnabledChange, onRemove)
+        }
+        RowDivider()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(role = Role.Button) { adding = true }
+                .heightIn(min = 52.dp)
+                .padding(horizontal = 14.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            RowIcon(R.drawable.ic_add_24dp)
+            Text(
+                text = stringResource(R.string.mx_sources_add),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = XfBlue,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+    if (adding) AddSourceDialog(onAdd = onAdd, onDismiss = { adding = false })
+}
+
+@Composable
+private fun SourceRowItem(
+    row: MainViewModel.SourceRow,
+    onEnabledChange: (String, Boolean) -> Unit,
+    onRemove: (String) -> Unit,
+) {
+    val count = when {
+        !row.enabled -> stringResource(R.string.mx_sources_off)
+        row.working == null -> stringResource(R.string.mx_sources_not_read)
+        else -> stringResource(R.string.mx_sources_working, row.working)
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 52.dp)
+            .padding(horizontal = 14.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .toggleable(value = row.enabled, role = Role.Switch) { onEnabledChange(row.id, it) }
+                .padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            RowIcon(R.drawable.ic_cloud_download_24dp)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = row.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = count,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = row.enabled,
+                onCheckedChange = null,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = XfBlue,
+                    checkedBorderColor = XfBlue,
+                ),
+            )
+        }
+        if (row.custom) {
+            Icon(
+                painter = painterResource(R.drawable.ic_delete_24dp),
+                contentDescription = stringResource(R.string.mx_sources_remove),
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .clickable(role = Role.Button) { onRemove(row.id) }
+                    .padding(8.dp)
+                    .size(22.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AddSourceDialog(onAdd: (String, String) -> Boolean, onDismiss: () -> Unit) {
+    var name by rememberSaveable { mutableStateOf("") }
+    var url by rememberSaveable { mutableStateOf("") }
+    var failed by rememberSaveable { mutableStateOf(false) }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.mx_sources_add)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                androidx.compose.material3.OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.mx_sources_name)) },
+                    singleLine = true,
+                )
+                androidx.compose.material3.OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it; failed = false },
+                    label = { Text(stringResource(R.string.mx_sources_link)) },
+                    singleLine = true,
+                    isError = failed,
+                    supportingText = if (failed) ({ Text(stringResource(R.string.mx_sources_invalid)) }) else null,
+                )
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = { if (onAdd(name, url)) onDismiss() else failed = true }) {
+                Text(stringResource(R.string.mx_sources_add_ok))
+            }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+    )
 }
