@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Matixray palette (day): ink, graphite and silver, the metal of the logo. values-night/colors.xml overrides the surface and text colors. -->
-    <color name="xf_background">#f2f2f4</color>
+    <!-- Matixray palette (day): light gray page, white cards, sky-blue accent. values-night/colors.xml overrides the surface and text colors. -->
+    <color name="xf_background">#f2f4f7</color>
     <color name="xf_card">#ffffff</color>
-    <color name="xf_purple">#0e0e10</color>
-    <color name="xf_purple_dark">#2b2b2f</color>
-    <color name="xf_purple_light">#8e8e96</color>
-    <color name="xf_text_main">#0e0e10</color>
-    <color name="xf_text_sub">#5f5f66</color>
-    <color name="xf_text_muted">#9a9aa0</color>
-    <color name="xf_border">#e0e0e5</color>
+    <color name="xf_purple">#0ea5e9</color>
+    <color name="xf_purple_dark">#0284c7</color>
+    <color name="xf_purple_light">#7dd3fc</color>
+    <color name="xf_text_main">#111418</color>
+    <color name="xf_text_sub">#5b6470</color>
+    <color name="xf_text_muted">#98a1ad</color>
+    <color name="xf_border">#e6e9ee</color>
     <color name="xf_green">#16a34a</color>
     <color name="xf_red">#ef4444</color>
-    <color name="xf_progress_track">#e9e9ed</color>
+    <color name="xf_progress_track">#e5e9ef</color>
 </resources>

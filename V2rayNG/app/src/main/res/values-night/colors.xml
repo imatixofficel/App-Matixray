@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Matixray palette (night): flat black canvas, silver accent -->
-    <color name="xf_background">#0b0b0c</color>
-    <color name="xf_card">#161617</color>
-    <color name="xf_purple">#e8e8ec</color>
-    <color name="xf_text_main">#f5f5f7</color>
-    <color name="xf_text_sub">#9a9aa0</color>
-    <color name="xf_text_muted">#6a6a70</color>
-    <color name="xf_border">#2e2e31</color>
-    <color name="xf_progress_track">#262628</color>
+    <!-- Matixray palette (night): near-black page, dark cards, sky-blue accent -->
+    <color name="xf_background">#0b0c0e</color>
+    <color name="xf_card">#1c1d21</color>
+    <color name="xf_purple">#38bdf8</color>
+    <color name="xf_purple_dark">#0ea5e9</color>
+    <color name="xf_purple_light">#7dd3fc</color>
+    <color name="xf_text_main">#f2f4f7</color>
+    <color name="xf_text_sub">#9aa3af</color>
+    <color name="xf_text_muted">#6b7380</color>
+    <color name="xf_border">#2a2c31</color>
+    <color name="xf_progress_track">#26282d</color>
 </resources>

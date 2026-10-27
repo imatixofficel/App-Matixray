@@ -48,21 +48,21 @@ class GlassStyle(
     val highlight: Color,
 )
 
-// Matixray: the surfaces are flat now, as in the Shadow VPN kit: a solid card color and a one-pixel border.
+// Matixray: the surfaces are flat, as in V2Box: a solid card color and a hairline border, no shadow.
 // The old glass fields stay so every caller keeps compiling; only fillTop (the card) and edgeDim (the border) are used.
 val DarkGlassStyle = GlassStyle(
-    fillTop = Color(0xFF161617),
-    fillBottom = Color(0xFF161617),
-    edgeLight = Color(0xFF2E2E31),
-    edgeDim = Color(0xFF2E2E31),
+    fillTop = Color(0xFF1C1D21),
+    fillBottom = Color(0xFF1C1D21),
+    edgeLight = Color(0xFF26282D),
+    edgeDim = Color(0xFF26282D),
     highlight = Color.Transparent,
 )
 
 val LightGlassStyle = GlassStyle(
     fillTop = Color(0xFFFFFFFF),
     fillBottom = Color(0xFFFFFFFF),
-    edgeLight = Color(0xFFE0E0E5),
-    edgeDim = Color(0xFFE0E0E5),
+    edgeLight = Color(0xFFEAEDF1),
+    edgeDim = Color(0xFFEAEDF1),
     highlight = Color.Transparent,
 )
 
@@ -76,7 +76,7 @@ object GlassPrefs {
     var enabled by mutableStateOf(MmkvManager.decodeSettingsBool(AppConfig.PREF_GLASS_CARDS, false))
 }
 
-val GlassCardShape = RoundedCornerShape(14.dp)
+val GlassCardShape = RoundedCornerShape(16.dp)
 val GlassPillShape = RoundedCornerShape(50)
 
 /**
@@ -90,12 +90,12 @@ val MatixButtonShape = RoundedCornerShape(50)
 /** Fill of buttons and selected tabs: the solid accent color. */
 val PrimaryGradient: Brush
     @Composable get() = Brush.linearGradient(
-        // Flat, like the kit's buttons: a solid accent (the two stops are the same color on purpose)
+        // Flat: a solid accent (the two stops are the same color on purpose)
         listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary)
     )
 
 /**
- * Card surface of the app: a solid fill and a thin border, flat like the Shadow VPN kit. It keeps the name of the old
+ * Card surface of the app: a solid fill and a thin border, flat like V2Box. It keeps the name of the old
  * glass modifier so every screen picks the new look up at once. [tint] lays a color over the card (a selected item).
  * It draws no gradient and no highlight, so a long list of cards stays cheap to scroll.
  */
@@ -105,7 +105,6 @@ fun Modifier.liquidGlass(
     tint: Color = Color.Unspecified,
 ): Modifier {
     val glass = LocalGlassStyle.current
-    // Day: a soft gray shadow under the card, as the cards of the design float a little over the page.
     val dark = LocalDarkTheme.current
     if (GlassPrefs.enabled) {
         // Liquid glass (the user can turn it off in the settings): a see-through fill that is brighter on top, and an
@@ -135,18 +134,12 @@ fun Modifier.liquidGlass(
         if (tint != Color.Unspecified) glassResult = glassResult.background(tint)
         return glassResult.border(1.2.dp, Brush.linearGradient(edge, start = Offset.Zero, end = Offset.Infinite), shape)
     }
-    var result = (if (dark) this else this.shadow(
-        elevation = 3.dp,
-        shape = shape,
-        clip = false,
-        ambientColor = Color(0x1F000000),
-        spotColor = Color(0x1F000000),
-    )).clip(shape).background(glass.fillTop)
+    var result = this.clip(shape).background(glass.fillTop)
     if (tint != Color.Unspecified) result = result.background(tint)
     return result.border(1.dp, glass.edgeDim, shape)
 }
 
-/** Soft colored glow behind a shape (the violet halo of the main connect button). */
+/** Soft colored glow behind a shape (the sky-blue halo of the connect button when it is on). */
 fun Modifier.softGlow(glowColor: Color, blur: Dp = 18.dp, corner: Dp = 20.dp): Modifier = drawWithCache {
     val paint = android.graphics.Paint().apply {
         isAntiAlias = true
@@ -191,20 +184,19 @@ fun GlassSurface(
 }
 
 /**
- * Full-window backdrop: the flat canvas color with one soft violet glow at the top, like the lit-from-above look of the
- * Shadow VPN kit. The brush is built once per size, so a frame costs two fills.
+ * Full-window backdrop: the flat page color. (The glow fields are kept transparent so nothing extra is drawn; the colored
+ * blobs only appear when the liquid-glass cards are turned on in the settings.)
  */
 @Composable
 fun AppBackdrop(modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
     val dark = LocalDarkTheme.current
-    val glow = if (dark) Color(0x14FFFFFF) else Color.Transparent
+    val glow = Color.Transparent
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(scheme.background)
             .drawWithCache {
-                // Night: a violet glow from the top. Day: white that fades into a soft violet haze at the top.
                 val brush = if (dark) {
                     Brush.radialGradient(
                         listOf(glow, Color.Transparent),
@@ -220,13 +212,13 @@ fun AppBackdrop(modifier: Modifier = Modifier) {
                 }
                 val glassOn = GlassPrefs.enabled
                 onDrawBehind {
-                    drawRect(brush)
+                    if (glow.alpha > 0f) drawRect(brush)
                     if (glassOn) {
                         // Soft colored light behind the page, so the glass cards have something to refract.
                         val blobs = if (dark) {
-                            listOf(Color(0x663B6BFF), Color(0x5A8A4DFF), Color(0x4D19C6B8))
+                            listOf(Color(0x660EA5E9), Color(0x5A38BDF8), Color(0x4D22D3EE))
                         } else {
-                            listOf(Color(0x553B82F6), Color(0x4DA78BFA), Color(0x4D2DD4BF))
+                            listOf(Color(0x550EA5E9), Color(0x4D7DD3FC), Color(0x4D67E8F9))
                         }
                         val spots = listOf(
                             Offset(size.width * 0.10f, size.height * 0.12f),

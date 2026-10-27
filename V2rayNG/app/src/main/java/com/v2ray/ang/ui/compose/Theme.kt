@@ -1,12 +1,16 @@
 package com.v2ray.ang.ui.compose
 
 import android.app.Activity
+import android.os.Build
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -21,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import com.v2ray.ang.AppConfig
@@ -30,112 +35,112 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-// ---- Matixray palette: black, gray and white. The Xf* names of the old violet palette are kept so every user of them
-// stays as it is; the accent (XfPurple*) is now white in the dark theme and near-black in the light one ----
-val XfBackground = Color(0xFF0B0B0C)
-val XfCard = Color(0xFF161617)
-val XfPurple = Color(0xFFE9E9EB)
-val XfPurpleDark = Color(0xFF8E8E93)
-val XfPurpleLight = Color(0xFFF5F5F7)
-val XfTextMain = Color(0xFFF5F5F7)
-val XfTextSub = Color(0xFF9A9AA0)
-val XfTextMuted = Color(0xFF6A6A70)
-val XfBorder = Color(0x33FFFFFF)
+// ---- Matixray palette: light-gray page, white cards, sky-blue accent (the look of V2Box). The Xf* names of the older
+// palettes are kept so every file that uses them keeps compiling; only the values changed ----
+val XfBackground = Color(0xFF0B0C0E)
+val XfCard = Color(0xFF1C1D21)
+val XfPurple = Color(0xFF38BDF8)
+val XfPurpleDark = Color(0xFF0EA5E9)
+val XfPurpleLight = Color(0xFF7DD3FC)
+val XfTextMain = Color(0xFFF2F4F7)
+val XfTextSub = Color(0xFF9AA3AF)
+val XfTextMuted = Color(0xFF6B7380)
+val XfBorder = Color(0x1FFFFFFF)
 val XfGreen = Color(0xFF22C55E)
 val XfYellow = Color(0xFFFACC15)
 /** The light gray of the thin bars (the handle of the connection bar, the edge of the selected config). */
-val XfMint = Color(0xFFD0D0D4)
-val XfMintDark = Color(0xFF9A9AA0)
-/** Matixray ink, graphite and silver: the metal of the logo. Buttons are cut from these. */
-val XfInk = Color(0xFF0E0E10)
-val XfGraphite = Color(0xFF2B2B2F)
-val XfSilver = Color(0xFFE8E8EC)
-val XfSteel = Color(0xFF8E8E96)
-/** The color of a live connection: the connect button once it is on, the ring while it comes up, a healthy ping. */
-val XfConnected = Color(0xFF16A34A)
-val XfConnectedLight = Color(0xFF4ADE80)
+val XfMint = Color(0xFFD5DBE3)
+val XfMintDark = Color(0xFF9AA3AF)
+/** Old names of the button colors (they were ink and silver once); they are sky blue now. */
+val XfInk = Color(0xFF0EA5E9)
+val XfGraphite = Color(0xFF0284C7)
+val XfSilver = Color(0xFFBAE6FD)
+val XfSteel = Color(0xFF7DD3FC)
+/** The color of a live connection: the connect button once it is on, the ring while it comes up. */
+val XfConnected = Color(0xFF0EA5E9)
+val XfConnectedLight = Color(0xFF38BDF8)
 /** Old names of the connected color, kept so every file that still uses them follows the new color. */
-val XfBlue = Color(0xFF0B63F6)
-val XfBlueLight = Color(0xFF4C8DFF)
+val XfBlue = Color(0xFF0EA5E9)
+val XfBlueLight = Color(0xFF38BDF8)
 // Psiphon section: orange, so it reads apart from the main section
 val XfOrange = Color(0xFFFF8A1F)
 val XfOrangeDark = Color(0xFFE5700A)
 val XfOrangeLight = Color(0xFFFFC38A)
 val XfRed = Color(0xFFEF4444)
-val XfProgressTrack = Color(0xFF262628)
+val XfProgressTrack = Color(0xFF26282D)
 
 private val LightColor = lightColorScheme(
-    primary = Color(0xFF1C1C1E),
+    primary = Color(0xFF0EA5E9), // Sky blue
     onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFE5E5EA),
-    onPrimaryContainer = Color(0xFF1C1C1E),
-    secondary = Color(0xFF636366),
+    primaryContainer = Color(0xFFE0F2FE), // Pale sky
+    onPrimaryContainer = Color(0xFF0C4A6E),
+    secondary = Color(0xFFf97910), // Orange (Psiphon)
     onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFFE5E5EA),
-    onSecondaryContainer = Color(0xFF1C1C1E),
-    tertiary = Color(0xFF16A34A),
+    secondaryContainer = Color(0xFFFFE8D6),
+    onSecondaryContainer = Color(0xFF2B1700),
+    tertiary = Color(0xFF009966), // Green
     onTertiary = Color(0xFFFFFFFF),
-    tertiaryContainer = Color(0xFFC9F4D7),
-    onTertiaryContainer = Color(0xFF05301A),
-    error = Color(0xFFDC2626),
-    onError = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFA0F2D0),
+    onTertiaryContainer = Color(0xFF00201A),
+    error = Color(0xFFBA1A1A),
     errorContainer = Color(0xFFFFDAD6),
+    onError = Color(0xFFFFFFFF),
     onErrorContainer = Color(0xFF410002),
-    background = Color(0xFFF2F2F4),
-    onBackground = Color(0xFF1C1C1E),
-    surface = Color(0xFFFFFFFF),
-    onSurface = Color(0xFF1C1C1E),
-    surfaceVariant = Color(0xFFE9E9ED),
-    onSurfaceVariant = Color(0xFF636366),
-    outline = Color(0xFF9A9AA0),
-    outlineVariant = Color(0x1F000000),
-    inverseSurface = Color(0xFF2C2C2E),
-    inverseOnSurface = Color(0xFFF5F5F7),
-    inversePrimary = Color(0xFFE9E9EB),
+    background = Color(0xFFF2F4F7), // Page
+    onBackground = Color(0xFF111418),
+    surface = Color(0xFFF2F4F7), // Same as the page, so headers sit flat on it
+    onSurface = Color(0xFF111418),
+    surfaceVariant = Color(0xFFE8ECF1),
+    onSurfaceVariant = Color(0xFF5B6470),
+    outline = Color(0xFF7B8794),
+    outlineVariant = Color(0xFFE3E7EC),
+    inverseSurface = Color(0xFF25272C),
+    inverseOnSurface = Color(0xFFF2F4F7),
+    inversePrimary = Color(0xFF7DD3FC),
     scrim = Color(0xFF000000),
-    surfaceTint = Color(0xFF1C1C1E),
+    surfaceTint = Color(0xFF0EA5E9),
     surfaceContainerLowest = Color(0xFFFFFFFF),
-    surfaceContainerLow = Color(0xFFF8F8FA),
-    surfaceContainer = Color(0xFFFFFFFF),
-    surfaceContainerHigh = Color(0xFFEDEDF0),
-    surfaceContainerHighest = Color(0xFFE3E3E8),
+    surfaceContainerLow = Color(0xFFF7F9FB),
+    surfaceContainer = Color(0xFFFFFFFF), // Cards, the bottom bar
+    surfaceContainerHigh = Color(0xFFFFFFFF), // Dialogs, menus
+    surfaceContainerHighest = Color(0xFFE9EDF2),
 )
 
 private val DarkColor = darkColorScheme(
-    primary = XfPurple,
-    onPrimary = Color(0xFF111113),
-    primaryContainer = Color(0xFF2C2C2E),
-    onPrimaryContainer = Color(0xFFF2F2F7),
-    secondary = XfMint,
-    onSecondary = Color(0xFF111113),
-    secondaryContainer = Color(0xFF2A2A2C),
-    onSecondaryContainer = Color(0xFFE0E0E5),
-    tertiary = XfGreen,
-    onTertiary = Color(0xFF03210F),
-    tertiaryContainer = Color(0xFF0F3D22),
-    onTertiaryContainer = Color(0xFFBBF7D0),
-    error = Color(0xFFFF6B6B),
-    onError = Color(0xFF3B0000),
-    errorContainer = Color(0xFF4A0F0F),
-    onErrorContainer = Color(0xFFFECACA),
-    background = XfBackground,
-    onBackground = XfTextMain,
-    surface = Color(0xFF121214),
-    onSurface = XfTextMain,
-    surfaceVariant = Color(0xFF252528),
-    onSurfaceVariant = XfTextSub,
-    outline = XfTextMuted,
-    outlineVariant = Color(0xFF2E2E31),
-    inverseSurface = XfTextMain,
-    inverseOnSurface = XfBackground,
-    inversePrimary = XfPurpleDark,
+    primary = Color(0xFF38BDF8), // Sky blue
+    onPrimary = Color(0xFF00344D),
+    primaryContainer = Color(0xFF075985),
+    onPrimaryContainer = Color(0xFFBAE6FD),
+    secondary = Color(0xFFf97910), // Orange (Psiphon)
+    onSecondary = Color(0xFF4E2600),
+    secondaryContainer = Color(0xFF6F3800),
+    onSecondaryContainer = Color(0xFFFFE8D6),
+    tertiary = Color(0xFF83D6B5),
+    onTertiary = Color(0xFF00382E),
+    tertiaryContainer = Color(0xFF005143),
+    onTertiaryContainer = Color(0xFFA0F2D0),
+    error = Color(0xFFFFB4AB),
+    errorContainer = Color(0xFF93000A),
+    onError = Color(0xFF690005),
+    onErrorContainer = Color(0xFFFFDAD6),
+    background = Color(0xFF0B0C0E),
+    onBackground = Color(0xFFF2F4F7),
+    surface = Color(0xFF0B0C0E),
+    onSurface = Color(0xFFF2F4F7),
+    surfaceVariant = Color(0xFF2A2C31),
+    onSurfaceVariant = Color(0xFFA3ABB8),
+    outline = Color(0xFF7C8594),
+    outlineVariant = Color(0xFF2E3138),
+    inverseSurface = Color(0xFFF2F4F7),
+    inverseOnSurface = Color(0xFF111418),
+    inversePrimary = Color(0xFF0284C7),
     scrim = Color(0xFF000000),
-    surfaceTint = XfPurple,
-    surfaceContainerLowest = Color(0xFF080809),
-    surfaceContainerLow = Color(0xFF0F0F10),
-    surfaceContainer = XfCard,
-    surfaceContainerHigh = Color(0xFF1F1F21),
-    surfaceContainerHighest = Color(0xFF28282B),
+    surfaceTint = Color(0xFF38BDF8),
+    surfaceContainerLowest = Color(0xFF08090A),
+    surfaceContainerLow = Color(0xFF131417),
+    surfaceContainer = Color(0xFF1C1D21), // Cards, the bottom bar
+    surfaceContainerHigh = Color(0xFF25272C), // Dialogs, menus
+    surfaceContainerHighest = Color(0xFF2E3036),
 )
 
 /** Vazirmatn (static weights in res/font), used for every text style of the app. */
@@ -169,34 +174,34 @@ private fun Typography.withFontFamily(family: FontFamily): Typography = copy(
 
 // Semantic Colors
 val colorPing = Color(0xFF009966) // Green
-val colorPingRed = Color(0xFFFF4D6D) // Red
-val colorConfigType = Color(0xFFA1A1AA) // Steel
-val colorFabActive = Color(0xFF6B6B73) // Graphite
+val colorPingRed = Color(0xFFE5484D) // Soft red (timeout)
+val colorConfigType = Color(0xFF0EA5E9) // Sky blue
+val colorFabActive = Color(0xFF0EA5E9) // Sky blue
 val colorFabInactiveLight = Color(0xFF9C9C9C) // Gray
 val colorFabInactiveDark = Color(0xFF646464) // Dark Gray
-val dividerColorLight = Color(0xFFE0E0E0) // Light Gray
-val dividerColorDark = Color(0xFF424242) // Dark Gray
+val dividerColorLight = Color(0xFFE9ECF0)
+val dividerColorDark = Color(0xFF2A2C31)
 
 // Toast Colors 85%
 val toastNormalBgLight = Color(0xD9353A3E) // Dark Gray
 val toastNormalBgDark = Color(0xD94A4F54) // Darker Gray
 val toastSuccessBg = Color(0xD9388E3C) // Green
 val toastErrorBg = Color(0xD9D50000) // Red
-val toastInfoBg = Color(0xD93A3A40) // Graphite
+val toastInfoBg = Color(0xD90284C7) // Sky blue
 val toastIconCircleBg = Color(0x33FFFFFF) // Semi-transparent White
 val toastTextColor = Color.White // White
 
 /**
- * Fill of the main buttons (connect, get configs, add): a vertical metal gradient, vivid blue on both themes, so the button is always the strongest thing on the page. [onMatixButton] is the text color on it.
+ * Fill of the main buttons (connect, get configs, add): a flat sky blue, so the button is always the strongest thing on the page. [onMatixButton] is the text color on it.
  */
 val MatixButtonBrush: Brush
-    @Composable get() = Brush.verticalGradient(listOf(Color(0xFF3B8BFF), Color(0xFF0B57E8)))
+    @Composable get() = Brush.verticalGradient(listOf(Color(0xFF0EA5E9), Color(0xFF0EA5E9)))
 
 val onMatixButton: Color
     @Composable get() = Color.White
 
-/** Matixray: the app opens in the light (white and violet) look the first time; "1" is light, "2" dark, "0" the system. */
-private const val THEME_DEFAULT = "1"
+/** The theme the app opens in the first time: "0" follows the system, "1" is light, "2" dark. */
+private const val THEME_DEFAULT = "0"
 
 object ThemeManager {
     private val _themeMode = MutableStateFlow(
@@ -205,7 +210,7 @@ object ThemeManager {
     val themeMode: StateFlow<String> = _themeMode.asStateFlow()
 
     private val _dynamicColorEnabled = MutableStateFlow(
-        MmkvManager.decodeSettingsBool(AppConfig.PREF_DYNAMIC_COLOR, true)
+        MmkvManager.decodeSettingsBool(AppConfig.PREF_DYNAMIC_COLOR, false)
     )
     val dynamicColorEnabled: StateFlow<Boolean> = _dynamicColorEnabled.asStateFlow()
 
@@ -223,7 +228,7 @@ object ThemeManager {
         _themeMode.value =
             MmkvManager.decodeSettingsString(AppConfig.PREF_UI_MODE_NIGHT, THEME_DEFAULT) ?: THEME_DEFAULT
         _dynamicColorEnabled.value =
-            MmkvManager.decodeSettingsBool(AppConfig.PREF_DYNAMIC_COLOR, true)
+            MmkvManager.decodeSettingsBool(AppConfig.PREF_DYNAMIC_COLOR, false)
     }
 }
 
@@ -245,7 +250,14 @@ fun AppTheme(
     content: @Composable () -> Unit
 ) {
     val useDark = darkTheme
-    val colorScheme = if (useDark) DarkColor else LightColor
+    val dynamicColor by ThemeManager.dynamicColorEnabled.collectAsState()
+    val context = LocalContext.current
+    val colorScheme = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
+            if (useDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        useDark -> DarkColor
+        else -> LightColor
+    }
     val fontFamily = rememberAppFontFamily()
     val typography = remember(fontFamily) { Typography().withFontFamily(fontFamily) }
     val snackbarController = rememberAppSnackbarController()
@@ -271,8 +283,7 @@ fun AppTheme(
             colorScheme = colorScheme,
             typography = typography
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                AppBackdrop()
+            Box(modifier = Modifier.fillMaxSize().background(colorScheme.background)) {
                 AppSnackbarBridge(controller = snackbarController)
                 content()
                 AppSnackbarHost(hostState = snackbarController.hostState)
